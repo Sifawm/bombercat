@@ -11,6 +11,7 @@ config_version=5
 [application]
 
 config/name="BomberCat"
+run/main_scene="res://presentation/round_view.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 
 [debug]
@@ -30,3 +31,9 @@ window/stretch/aspect="keep"
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+
+[importer_defaults]
+
+scene={
+"import_script/path": "res://assets/models/use_vertex_colors.gd"
+}

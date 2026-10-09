@@ -1,0 +1,56 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://presentation/round_view.gd" id="1"]
+[ext_resource type="Resource" path="res://config/game_config.tres" id="2"]
+
+[sub_resource type="Environment" id="environment"]
+background_mode = 1
+background_color = Color(0.3, 0.5, 0.85, 1)
+ambient_light_source = 2
+ambient_light_color = Color(1, 1, 1, 1)
+ambient_light_energy = 0.35
+
+[sub_resource type="LabelSettings" id="hud_text"]
+font_size = 64
+outline_size = 12
+outline_color = Color(0, 0, 0, 1)
+
+[node name="RoundView" type="Node3D"]
+script = ExtResource("1")
+config = ExtResource("2")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("environment")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.9659, -0.1983, 0.1664, 0, 0.6428, 0.766, -0.2588, -0.7399, 0.6209, 0, 10, 0)
+light_energy = 0.9
+shadow_enabled = true
+
+[node name="Camera" type="Camera3D" parent="."]
+fov = 30.0
+
+[node name="Hud" type="CanvasLayer" parent="."]
+
+[node name="Timer" type="Label" parent="Hud"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 16.0
+offset_right = 200.0
+offset_bottom = 104.0
+grow_horizontal = 2
+text = "2:00"
+label_settings = SubResource("hud_text")
+horizontal_alignment = 1
+
+[node name="Result" type="Label" parent="Hud"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+label_settings = SubResource("hud_text")
+horizontal_alignment = 1
+vertical_alignment = 1

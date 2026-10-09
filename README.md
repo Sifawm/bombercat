@@ -12,6 +12,18 @@ and [docs/spec-v1.md](docs/spec-v1.md) for what v1 is.
 | `renders/` | Reference renders produced by the `art/render_*.py` scripts. |
 | `docs/` | Spec, scope, Powerup catalogue and ADRs. |
 
+## Playing and testing
+
+```sh
+godot --path game        # play: Player 1 WASD + Space, Player 2 arrows + Enter
+game/run_tests.sh        # rules-layer tests, headless
+```
+
+The game is three layers with one-way dependencies (see [ADR 0002](docs/adr/0002-rules-layer-owns-movement.md)):
+`game/rules/` (plain classes, owns all game state), `game/presentation/` (scenes that show it)
+and `game/control/` (Player controllers that issue commands). Balance values live in
+`game/config/game_config.tres`.
+
 ## Regenerating models
 
 From the repository root:
