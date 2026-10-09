@@ -69,6 +69,7 @@ func _process(_delta: float) -> void:
 				- int(Input.is_action_just_pressed(LocalPlayerController.action(player, "left")))
 		if step != 0:
 			_move(player, step)
+			Audio.play(&"ui_move")
 			_refresh()
 		if Input.is_action_just_pressed(LocalPlayerController.action(player, "bomb")):
 			_confirm(player)
@@ -94,6 +95,7 @@ func _confirm(player: int) -> void:
 		_cursors[player] = pick
 	_picks[player] = pick
 	_cat_views[pick].play("win")
+	Audio.play(&"ui_confirm")
 	for other in PLAYERS:
 		if _picks[other] == -1 and _cursors[other] == pick:
 			_move(other, 1)
@@ -102,7 +104,9 @@ func _confirm(player: int) -> void:
 		set_process(false)
 		var countdown := create_tween()
 		for second in range(COUNTDOWN_SECONDS, 0, -1):
-			countdown.tween_callback(func() -> void: _status.text = "Starting in %d..." % second)
+			countdown.tween_callback(func() -> void:
+				_status.text = "Starting in %d..." % second
+				Audio.play(&"countdown"))
 			countdown.tween_interval(0.7)
 		countdown.tween_callback(func() -> void: confirmed.emit(_picks))
 

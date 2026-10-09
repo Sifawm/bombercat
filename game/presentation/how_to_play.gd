@@ -7,10 +7,10 @@ signal closed
 
 const CONFIG: GameConfig = preload("res://config/game_config.tres")
 const CONTROLS: Array[Array] = [
-	["", "Move", "Bomb"],
-	["Player 1", "W A S D", "Space"],
-	["Player 2", "Arrow keys", "Enter"],
-	["Gamepad", "Stick or d-pad", "A"],
+	["", "Move", "Bomb", "Meow"],
+	["Player 1", "W A S D", "Space", "Q"],
+	["Player 2", "Arrow keys", "Enter", "Right Shift"],
+	["Gamepad", "Stick or d-pad", "A", "X"],
 ]
 ## In catalogue order: id, name, effect.
 const POWERUPS: Array[Array] = [
@@ -39,7 +39,7 @@ func _init() -> void:
 	column.add_child(Ui.label("Trap the other Cat in your Explosions. First to win %d Rounds wins the Match." % CONFIG.rounds_to_win,
 		Ui.SMALL_SIZE))
 	var controls := GridContainer.new()
-	controls.columns = 3
+	controls.columns = CONTROLS[0].size()
 	controls.add_theme_constant_override("h_separation", 64)
 	controls.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	for row in CONTROLS:

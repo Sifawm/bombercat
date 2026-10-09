@@ -52,6 +52,7 @@ func _init(game_match: Match, picks: Array[int]) -> void:
 
 func _ready() -> void:
 	_rematch.grab_focus()
+	Audio.play(&"victory")
 	var buttons := _rematch.get_parent().get_children()
 	for button: Button in buttons:
 		button.disabled = true

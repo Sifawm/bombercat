@@ -4,12 +4,13 @@ extends PlayerController
 ## Bindings are fixed, one set per slot.
 
 const KEYS: Array[Dictionary] = [
-	{"up": KEY_W, "down": KEY_S, "left": KEY_A, "right": KEY_D, "bomb": KEY_SPACE},
-	{"up": KEY_UP, "down": KEY_DOWN, "left": KEY_LEFT, "right": KEY_RIGHT, "bomb": KEY_ENTER},
+	{"up": KEY_W, "down": KEY_S, "left": KEY_A, "right": KEY_D, "bomb": KEY_SPACE, "meow": KEY_Q},
+	{"up": KEY_UP, "down": KEY_DOWN, "left": KEY_LEFT, "right": KEY_RIGHT, "bomb": KEY_ENTER,
+		"meow": KEY_SHIFT},  # the right one,
 ]
 const PAD_BUTTONS: Dictionary[String, JoyButton] = {
 	"up": JOY_BUTTON_DPAD_UP, "down": JOY_BUTTON_DPAD_DOWN, "left": JOY_BUTTON_DPAD_LEFT,
-	"right": JOY_BUTTON_DPAD_RIGHT, "bomb": JOY_BUTTON_A,
+	"right": JOY_BUTTON_DPAD_RIGHT, "bomb": JOY_BUTTON_A, "meow": JOY_BUTTON_X,
 }
 ## Left stick: the axis and which side of it.
 ## How far the stick must be pushed; high enough that a sideways drift does not turn the Cat.
@@ -24,7 +25,7 @@ var _slot: int
 var _horizontal_is_newer := false
 
 
-## The input action of a slot's "up", "down", "left", "right" or "bomb".
+## The input action of a slot's "up", "down", "left", "right", "bomb" or "meow".
 static func action(slot: int, control: String) -> StringName:
 	return "p%d_%s" % [slot + 1, control]
 
@@ -40,6 +41,8 @@ static func register_actions() -> void:
 			InputMap.add_action(action_name, STICK_DEADZONE)
 			var key := InputEventKey.new()
 			key.physical_keycode = KEYS[slot][control]
+			if key.physical_keycode == KEY_SHIFT:
+				key.location = KEY_LOCATION_RIGHT
 			InputMap.action_add_event(action_name, key)
 			# ponytail: slot N listens to joypad device N. Some keyboards register as a joypad
 			# and take a device number; pick devices from Input.get_connected_joypads() if
@@ -66,6 +69,10 @@ func drive(game_round: Round, player: int) -> void:
 	game_round.set_move(player, _direction())
 	if Input.is_action_just_pressed(action(_slot, "bomb")):
 		game_round.place_bomb(player)
+
+
+func meows() -> bool:
+	return Input.is_action_just_pressed(action(_slot, "meow"))
 
 
 ## Four directions only. With keys of both axes held, the one pressed last wins, so a Player

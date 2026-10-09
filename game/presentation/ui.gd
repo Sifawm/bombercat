@@ -19,7 +19,16 @@ static func button(text: String, on_pressed: Callable) -> Button:
 	var node := Button.new()
 	node.text = text
 	node.pressed.connect(on_pressed)
+	node.pressed.connect(Audio.play.bind(&"ui_confirm"))
+	node.focus_entered.connect(_bounce.bind(node))
 	return node
+
+
+static func _bounce(control: Control) -> void:
+	control.pivot_offset = control.size / 2.0
+	control.scale = Vector2.ONE * 1.15
+	control.create_tween().tween_property(control, "scale", Vector2.ONE, 0.25) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 ## A vertical stack centred in `screen`, which is made to cover the whole picture.
