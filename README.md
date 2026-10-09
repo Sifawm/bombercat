@@ -24,11 +24,26 @@ The game is three layers with one-way dependencies (see [ADR 0002](docs/adr/0002
 and `game/control/` (Player controllers that issue commands). Balance values live in
 `game/config/game_config.tres`.
 
+## Map Studio
+
+Maps are GridMap scenes in `game/maps/` (see [ADR 0001](docs/adr/0001-map-studio-in-godot-editor.md)).
+To make or edit one, open it in the Godot editor and select its root node:
+
+- **Paint** Walls (`wall_brick`, `wall_brick_low`, `wall_pillar`), Crates and Spawn Points from the
+  GridMap palette, on floor 0. Empty Tiles inside the painted area are Floor, laid automatically.
+- **Powerup Pool**: the root node's `powerup_pool` property in the inspector.
+- **Validation**: problems appear as the yellow warning icon next to the root node.
+- **Test-play**: press F6 (run current scene) with the Map open.
+
+A new Map is a new scene whose root is a GridMap with the `maps/map_scene.gd` script.
+
 ## Regenerating models
 
 From the repository root:
 
 ```sh
+blender -b art/cats.blend -P art/build_props.py \
+  --python-expr "import bpy; bpy.ops.wm.save_mainfile()"   # only after editing a build script
 blender -b art/cats.blend -P art/export_glb.py   # writes game/assets/models/*.glb
 godot --headless --path game --import            # re-imports them
 ```

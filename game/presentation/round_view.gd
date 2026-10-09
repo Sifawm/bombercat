@@ -1,27 +1,12 @@
+class_name RoundView
 extends Node3D
-## Minimal presentation of Rounds on a placeholder Map: places the models where the rules
-## say, plays the Cats' animations and shows the result. It decides nothing.
+## Minimal presentation of Rounds on a Map: places the models where the rules say, plays
+## the Cats' animations and shows the result. It decides nothing.
 
-const PLACEHOLDER_MAP: PackedStringArray = [
-	"#############",
-	"#S.xxxxxxx.S#",
-	"#.#x#x#x#x#.#",
-	"#xxxxx.xxxxx#",
-	"#x#x#.#.#x#x#",
-	"#xxx.....xxx#",
-	"#x#x#.#.#x#x#",
-	"#xxxxx.xxxxx#",
-	"#.#x#x#x#x#.#",
-	"#S.xxxxxxx.S#",
-	"#############",
-]
 const CATS: Array[Dictionary] = [
 	{"name": "Turing", "scene": preload("res://assets/models/turing.glb")},
 	{"name": "Berni", "scene": preload("res://assets/models/berni.glb")},
 ]
-const FLOORS: Array[PackedScene] = [preload("res://assets/models/floor_a.glb"), preload("res://assets/models/floor_b.glb")]
-const WALL_BRICK: PackedScene = preload("res://assets/models/wall_brick.glb")
-const WALL_PILLAR: PackedScene = preload("res://assets/models/wall_pillar.glb")
 const CRATE: PackedScene = preload("res://assets/models/crate.glb")
 const BOMB: PackedScene = preload("res://assets/models/bomb.glb")
 
@@ -31,9 +16,13 @@ const BOMB_SCALE := 0.8
 const CAMERA_PITCH := deg_to_rad(57.0)
 const RESULT_SECONDS := 2.5
 
-@export var config: GameConfig
+## Set by Map Studio's test-play to run the Map being edited instead of `map_scene`.
+static var test_map: PackedScene
 
-var _map := MapData.from_rows(PLACEHOLDER_MAP)
+@export var config: GameConfig
+@export var map_scene: PackedScene
+
+var _map_node: MapScene
 var _round: Round
 var _controllers: Array[PlayerController] = [LocalPlayerController.new(0), LocalPlayerController.new(1)]
 var _world: Node3D
@@ -50,7 +39,8 @@ var _crate_nodes: Dictionary[Vector2i, Node3D] = {}
 
 
 func _ready() -> void:
-	_frame_map()
+	if test_map != null:
+		map_scene = test_map
 	_start_round()
 
 
@@ -88,23 +78,23 @@ func _start_round() -> void:
 	_crate_nodes.clear()
 	_result_label.text = ""
 
-	_round = Round.new(_map, config, _map.farthest_spawn_points(CATS.size()))
+	_map_node = map_scene.instantiate()
+	_world.add_child(_map_node)
+	var map := _map_node.to_map_data()
+	_map_node.prepare_for_play()
+	_frame_map(map.size)
+
+	_round = Round.new(map, config, map.farthest_spawn_points(CATS.size()))
 	_round.bomb_placed.connect(_on_bomb_placed)
 	_round.bomb_detonated.connect(_on_bomb_detonated)
 	_round.crate_destroyed.connect(_on_crate_destroyed)
 	_round.cat_eliminated.connect(_on_cat_eliminated)
 	_round.round_ended.connect(_on_round_ended)
 
-	for y in _map.size.y:
-		for x in _map.size.x:
-			var tile := Vector2i(x, y)
-			_place(FLOORS[(x + y) % 2], tile)
-			match _map.tile_at(tile):
-				MapData.Tile.WALL:
-					var on_border := x == 0 or y == 0 or x == _map.size.x - 1 or y == _map.size.y - 1
-					_place(WALL_BRICK if on_border else WALL_PILLAR, tile)
-				MapData.Tile.CRATE:
-					_crate_nodes[tile] = _place(CRATE, tile)
+	for y in map.size.y:
+		for x in map.size.x:
+			if map.tile_at(Vector2i(x, y)) == MapData.Tile.CRATE:
+				_crate_nodes[Vector2i(x, y)] = _place(CRATE, Vector2i(x, y))
 	for player in CATS.size():
 		var scene: PackedScene = CATS[player].scene
 		var node := _place(scene, _round.cats[player].tile())
@@ -125,15 +115,14 @@ func _place(scene: PackedScene, tile: Vector2i) -> Node3D:
 	return node
 
 
-## Tile coordinates to world: x runs east, y runs south, one Tile per metre.
 func _to_world(tile_position: Vector2) -> Vector3:
-	return Vector3(tile_position.x, 0.0, tile_position.y)
+	return _map_node.tile_to_local(tile_position)
 
 
 ## Places the camera south of the Map, looking north and down, and backs it away until
 ## the whole Map (with a margin) is inside the view.
-func _frame_map() -> void:
-	var last := Vector2(_map.size - Vector2i.ONE)
+func _frame_map(map_size: Vector2i) -> void:
+	var last := Vector2(map_size - Vector2i.ONE)
 	var corners: Array[Vector3] = []
 	for corner: Vector2 in [Vector2(-1, -1), Vector2(last.x + 1, -1), Vector2(-1, last.y + 1), last + Vector2.ONE]:
 		corners.append(_to_world(corner))

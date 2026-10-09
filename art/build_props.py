@@ -1,5 +1,5 @@
-"""Builds the props in collection "Props": bomb, floor_a, floor_b, wall_pillar,
-crate, wall_brick. Same recipe as the cats: one mesh each, vertex colours in "Col", shared materials
+"""Builds the props in collection "Props": bomb, floor_a, floor_b, wall_pillar, crate,
+wall_brick, wall_brick_low, spawn_marker. Same recipe as the cats: one mesh each, vertex colours in "Col", shared materials
 (Cat_Fur matte, Cat_Gloss shiny, Prop_Glow emissive). One grid cell = 1 m; blocks sit on z=0,
 floor tiles have their top at z=0. Run inside Blender with cats.blend open:
 
@@ -170,19 +170,30 @@ def crate():
     return p
 
 
-# ---------------------------------------------------------------- border wall: two courses of brick
-def wall_brick():
+# ---------------------------------------------------------------- border wall: courses of brick
+def wall_brick(courses=2):
+    """Two courses for the normal Wall; one for the low variant that does not hide the Tiles behind it."""
     p = Prop()
-    p.box((0.94, 0.94, 0.56), (0, 0, 0.28), V(0.72, 0.68, 0.60), bevel=0)  # mortar core
+    p.box((0.94, 0.94, 0.28 * courses), (0, 0, 0.14 * courses), V(0.72, 0.68, 0.60), bevel=0)  # mortar core
     a, b = V(0.55, 0.21, 0.13), V(0.64, 0.28, 0.16)
-    for x, w, c in ((-0.25125, 0.4775, a), (0.25125, 0.4775, b)):
-        p.box((w, 0.98, 0.285), (x, 0, 0.1425), c, bevel=0.02)
-    for x, w, c in ((-0.37625, 0.2275, b), (0, 0.5, a), (0.37625, 0.2275, b)):
-        p.box((w, 0.98, 0.285), (x, 0, 0.4575), c, bevel=0.02)
+    rows = [((-0.25125, 0.4775, a), (0.25125, 0.4775, b)),
+            ((-0.37625, 0.2275, b), (0, 0.5, a), (0.37625, 0.2275, b))]
+    for course, bricks in enumerate(rows[:courses]):
+        for x, w, c in bricks:
+            p.box((w, 0.98, 0.285), (x, 0, 0.1425 + 0.315 * course), c, bevel=0.02)
+    return p
+
+
+# ---------------------------------------------------------------- spawn point marker: gold plate with a paw (Map Studio only)
+def spawn_marker():
+    p = Prop()
+    p.disc(V(0, 0, 0.012), UP, V(0, 1, 0), 0.42, 0.42, V(1.0, 0.72, 0.08))
+    p.paw(V(0, 0, 0.03), UP, V(0, 1, 0), 0.5, V(0.45, 0.2, 0.02))
     return p
 
 
 PROPS = [("bomb", bomb()), ("floor_a", floor(V(0.36, 0.62, 0.22))), ("floor_b", floor(V(0.27, 0.52, 0.17))),
-         ("wall_pillar", wall_pillar()), ("crate", crate()), ("wall_brick", wall_brick())]
+         ("wall_pillar", wall_pillar()), ("crate", crate()), ("wall_brick", wall_brick()),
+         ("wall_brick_low", wall_brick(1)), ("spawn_marker", spawn_marker())]
 for i, (name, prop) in enumerate(PROPS):
     prop.finish(name, i * 1.5)

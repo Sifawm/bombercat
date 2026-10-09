@@ -1,7 +1,8 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://presentation/round_view.gd" id="1"]
 [ext_resource type="Resource" path="res://config/game_config.tres" id="2"]
+[ext_resource type="PackedScene" path="res://maps/backyard.tscn" id="3"]
 
 [sub_resource type="Environment" id="environment"]
 background_mode = 1
@@ -18,6 +19,7 @@ outline_color = Color(0, 0, 0, 1)
 [node name="RoundView" type="Node3D"]
 script = ExtResource("1")
 config = ExtResource("2")
+map_scene = ExtResource("3")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("environment")

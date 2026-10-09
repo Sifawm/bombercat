@@ -1,3 +1,4 @@
+@tool
 class_name MapData
 extends RefCounted
 ## Plain description of a Map: the data a Board is built from. Knows nothing about scenes.
@@ -8,6 +9,8 @@ var size: Vector2i
 ## Row by row, `size.x` Tiles per row.
 var tiles: Array[Tile] = []
 var spawn_points: Array[Vector2i] = []
+## How many of each Powerup (by id) the Map hides in its Crates every Round.
+var powerup_pool: Dictionary[StringName, int] = {}
 
 
 ## Builds a Map from text rows: "#" Wall, "x" Crate, "S" Spawn Point, anything else Floor.
