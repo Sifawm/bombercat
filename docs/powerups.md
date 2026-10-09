@@ -10,12 +10,12 @@ model is exported and the **Game** column when the Powerup works in a Round.
 
 | Powerup | Bomberman original | Effect | Model | Game |
 |---|---|---|---|---|
-| **Yarn Ball** | Bomb Up | +1 Bomb Capacity | todo | todo |
-| **Tuna Can** | Fire Up | +1 Range | todo | todo |
-| **Catnip** | Speed Up (Roller Skates) | Increases movement speed | todo | todo |
-| **Paw Swipe** | Bomb Kick | Walking into a Bomb makes it slide until it hits something | todo | todo |
-| **Nine Lives** | Heart | Absorbs one Explosion, then grants a brief invulnerability. Does not stack | todo | todo |
-| **Cucumber** | Skull | Negative: applies a random Curse (inverted controls or slowness) for about 10 s | todo | todo |
+| **Yarn Ball** | Bomb Up | +1 Bomb Capacity | done | done |
+| **Tuna Can** | Fire Up | +1 Range | done | done |
+| **Catnip** | Speed Up (Roller Skates) | Increases movement speed | done | done |
+| **Paw Swipe** | Bomb Kick | Walking into a Bomb makes it slide until it hits something | done | done |
+| **Nine Lives** | Heart | Absorbs one Explosion, then grants a brief invulnerability. Does not stack | done | done |
+| **Cucumber** | Skull | Negative: applies a random Curse (inverted controls or slowness) for about 10 s | done | done |
 
 Bomb Capacity and Range are capped by a tunable maximum (initially 8 each).
 

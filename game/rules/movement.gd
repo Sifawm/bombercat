@@ -6,11 +6,13 @@ extends RefCounted
 ## rule: its owner overlaps the Bomb's Tile until fully off it, and then cannot re-enter.
 
 const EPSILON := 0.0001
+const NOT_BLOCKED := Vector2i(-1, -1)
 
 
-static func move(cat: CatState, board: Board, direction: Vector2i, distance: float, corner_assist: float) -> void:
+## Returns the Tile that stopped the Cat walking straight ahead, or NOT_BLOCKED.
+static func move(cat: CatState, board: Board, direction: Vector2i, distance: float, corner_assist: float) -> Vector2i:
 	if direction == Vector2i.ZERO:
-		return
+		return NOT_BLOCKED
 	cat.facing = direction
 	var along := 0 if direction.x != 0 else 1
 	var across := 1 - along
@@ -33,13 +35,13 @@ static func move(cat: CatState, board: Board, direction: Vector2i, distance: flo
 				target = lane
 				break
 		if is_nan(target):
-			return
+			return NOT_BLOCKED
 		var slide := minf(distance, absf(target - position[across]))
 		position[across] = move_toward(position[across], target, slide)
 		distance -= slide
 		if absf(position[across] - target) > EPSILON:
 			cat.position = position
-			return
+			return NOT_BLOCKED
 		position[across] = target
 
 	while distance > EPSILON:
@@ -51,8 +53,10 @@ static func move(cat: CatState, board: Board, direction: Vector2i, distance: flo
 		var tile := Vector2i(position.round())
 		tile[along] = int(next)
 		if on_centre and not board.is_walkable(tile):
-			break
+			cat.position = position
+			return tile
 		var travelled := minf(distance, absf(next - position[along]))
 		position[along] = move_toward(position[along], next, travelled)
 		distance -= travelled
 	cat.position = position
+	return NOT_BLOCKED

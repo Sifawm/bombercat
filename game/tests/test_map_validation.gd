@@ -48,3 +48,9 @@ func test_a_map_must_be_enclosed_by_walls() -> void:
 	var found := problems(["#####", "#S.S.", "#.#.#", "#####"])
 	check_eq(found.size(), 1, "one problem")
 	check(found[0].contains("(4, 1)") and found[0].contains("Wall"), found[0])
+
+
+func test_the_powerup_pool_may_only_name_known_powerups() -> void:
+	var found := problems(GOOD, {&"yarn_ball": 1, &"laser_pointer": 1})
+	check_eq(found.size(), 1, "one problem")
+	check(found[0].contains("laser_pointer"), found[0])

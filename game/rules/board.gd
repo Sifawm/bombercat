@@ -6,6 +6,10 @@ var size: Vector2i
 var bombs: Dictionary[Vector2i, Bomb] = {}
 ## Tiles under an active Explosion and the seconds each stays lethal.
 var explosions: Dictionary[Vector2i, float] = {}
+## Powerups lying on the Floor.
+var powerups: Dictionary[Vector2i, Powerup] = {}
+## Powerups still inside their Crates.
+var hidden_powerups: Dictionary[Vector2i, Powerup] = {}
 
 var _map: MapData
 

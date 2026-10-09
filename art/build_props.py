@@ -1,5 +1,6 @@
 """Builds the props in collection "Props": bomb, floor_a, floor_b, wall_pillar, crate,
-wall_brick, wall_brick_low, spawn_marker. Same recipe as the cats: one mesh each, vertex colours in "Col", shared materials
+wall_brick, wall_brick_low, spawn_marker and the Powerups (yarn_ball, tuna_can, catnip,
+paw_swipe, nine_lives, cucumber). Same recipe as the cats: one mesh each, vertex colours in "Col", shared materials
 (Cat_Fur matte, Cat_Gloss shiny, Prop_Glow emissive). One grid cell = 1 m; blocks sit on z=0,
 floor tiles have their top at z=0. Run inside Blender with cats.blend open:
 
@@ -92,6 +93,20 @@ class Prop:
                 for k in range(n):
                     bm.faces.new((A[k], A[(k + 1) % n], B[(k + 1) % n], B[k]))
         self.part(make, colour, smooth=True)
+
+    def ring(self, centre, radius, thickness, colour, mat=MATTE, rot=None, seg=24, n=8):
+        """Torus around the Z axis (before `rot`)."""
+        m = T(centre) @ (rot.to_matrix().to_4x4() if rot else Matrix())
+
+        def make(bm):
+            rings = [[bm.verts.new(m @ V((radius + thickness * math.cos(k * math.tau / n)) * math.cos(i * math.tau / seg),
+                                         (radius + thickness * math.cos(k * math.tau / n)) * math.sin(i * math.tau / seg),
+                                         thickness * math.sin(k * math.tau / n))) for k in range(n)] for i in range(seg)]
+            for i in range(seg):
+                A, B = rings[i], rings[(i + 1) % seg]
+                for k in range(n):
+                    bm.faces.new((A[k], A[(k + 1) % n], B[(k + 1) % n], B[k]))
+        self.part(make, colour, mat, True)
 
     def finish(self, name, x, collection="Props"):
         col = bpy.data.collections.get(collection) or bpy.data.collections.new(collection)
@@ -192,8 +207,93 @@ def spawn_marker():
     return p
 
 
+# ---------------------------------------------------------------- Powerups: about half a Tile wide,
+# resting on z=0, each with its own silhouette and dominant colour
+def yarn_ball():
+    p = Prop()
+    C, R = V(0, 0, 0.27), 0.25
+    pink, light = V(0.85, 0.08, 0.35), V(1.0, 0.35, 0.55)
+    p.ball(C, (R, R, R), pink, seg=24)
+    for axis, angle in ((V(1, 0, 0), 0.5), (V(1, 0, 0), 1.5), (V(0, 1, 0), 0.9), (V(0, 1, 0), 2.1), (V(1, 1, 0).normalized(), 1.2)):
+        p.ring(C, R + 0.004, 0.022, light, rot=Quaternion(axis, angle))
+    strand = interpolate_bezier(C + V(0.2, -0.1, -0.12), V(0.36, -0.2, 0.0), V(0.30, -0.36, 0.05), V(0.14, -0.38, 0.03), 10)
+    p.tube(strand, 0.022, light)
+    return p
+
+
+def tuna_can():
+    p = Prop()
+    steel, label, fish = V(0.75, 0.78, 0.82), V(0.05, 0.25, 0.85), V(1.0, 0.75, 0.2)
+    p.cone(V(0, 0, 0.14), (0.27, 0.27, 0.14), steel, GLOSS, r2=1.0, seg=24)
+    p.cone(V(0, 0, 0.14), (0.278, 0.278, 0.09), label, MATTE, r2=1.0, seg=24)
+    p.ring(V(0, 0, 0.28), 0.25, 0.022, steel, GLOSS)
+    p.disc(V(-0.03, 0, 0.285), UP, V(0, 1, 0), 0.13, 0.075, fish)
+    p.cone(V(0.14, 0, 0.285), (0.07, 0.075, 0.012), fish, rot=Quaternion((0, 1, 0), -math.pi / 2), r2=0.0, seg=3)
+    return p
+
+
+def catnip():
+    p = Prop()
+    pot, soil, leaf, bloom = V(0.72, 0.30, 0.14), V(0.16, 0.09, 0.05), V(0.20, 0.80, 0.18), V(0.65, 0.35, 0.90)
+    p.cone(V(0, 0, 0.11), (0.14, 0.14, 0.11), pot, r2=1.35, seg=16)
+    p.ring(V(0, 0, 0.22), 0.19, 0.025, pot)
+    p.disc(V(0, 0, 0.215), UP, V(0, 1, 0), 0.18, 0.18, soil)
+    for i in range(6):
+        a = i * math.tau / 6
+        lean = Quaternion((0, 0, 1), a) @ Quaternion((0, 1, 0), 0.6)
+        p.ball(V(0.13 * math.cos(a), 0.13 * math.sin(a), 0.36 + 0.05 * (i % 2)), (0.05, 0.10, 0.14), leaf, rot=lean, seg=12)
+    p.ball(V(0, 0, 0.44), (0.07, 0.07, 0.15), leaf, seg=12)
+    p.ball(V(0, 0, 0.60), (0.055,) * 3, bloom, seg=10)
+    return p
+
+
+def paw_swipe():
+    p = Prop()
+    fur, pad, claw = V(1.0, 0.45, 0.08), V(0.95, 0.45, 0.55), V(0.95, 0.95, 0.9)
+    p.ball(V(0, 0.02, 0.18), (0.15, 0.13, 0.2), fur, seg=16)                       # forearm
+    p.ball(V(0, 0, 0.42), (0.23, 0.15, 0.2), fur, seg=20)                          # paw
+    for dx, dz in ((-0.17, 0.52), (-0.06, 0.60), (0.06, 0.60), (0.17, 0.52)):
+        p.ball(V(dx, -0.01, dz), (0.075, 0.08, 0.085), fur, seg=12)                # toes
+        p.cone(V(dx, -0.07, dz + 0.07), (0.022, 0.022, 0.05), claw, GLOSS, Quaternion((1, 0, 0), 0.9), r2=0.0, seg=8)
+        p.disc(V(dx, -0.085, dz - 0.01), FWD, UP, 0.04, 0.045, pad)
+    p.disc(V(0, -0.145, 0.40), FWD, UP, 0.11, 0.085, pad)
+    return p
+
+
+def nine_lives():
+    p = Prop()
+    white, gold, pink = V(0.95, 0.95, 0.98), V(1.0, 0.72, 0.1), V(0.9, 0.42, 0.48)
+    C = V(0, 0, 0.26)
+    p.ball(C, (0.26, 0.22, 0.22), white, seg=24)
+    for s in (-1, 1):
+        tilt = Quaternion((0, 1, 0), s * 0.45)
+        p.cone(V(s * 0.16, 0, 0.47), (0.09, 0.06, 0.11), white, MATTE, tilt)
+        p.cone(V(s * 0.155, -0.03, 0.46), (0.05, 0.035, 0.07), pink, MATTE, tilt, r2=0.15)
+        p.ball(C + V(s * 0.10, -0.2, 0.03), (0.03, 0.015, 0.045), V(0.02, 0.02, 0.03), GLOSS, seg=10)
+    p.ball(C + V(0, -0.215, -0.04), (0.022, 0.014, 0.016), pink, GLOSS, seg=8)
+    p.ring(V(0, 0, 0.68), 0.17, 0.028, gold, GLOW, rot=Quaternion((1, 0, 0), 0.25))
+    return p
+
+
+def cucumber():
+    p = Prop()
+    dark, light = V(0.06, 0.32, 0.08), V(0.30, 0.62, 0.20)
+    lie = Quaternion((0, 1, 0), 1.2) @ Quaternion((0, 0, 1), 0.5)
+    C = V(0, 0, 0.2)
+    p.ball(C, (0.13, 0.13, 0.36), dark, rot=lie, seg=20)
+    axis = lie @ V(0, 0, 1)
+    side, other = lie @ V(1, 0, 0), lie @ V(0, 1, 0)
+    for i in range(12):                                                             # warts
+        a, t = i * 2.4, -0.26 + 0.52 * i / 11
+        p.ball(C + axis * t + (side * math.cos(a) + other * math.sin(a)) * 0.115, (0.022,) * 3, light, seg=6)
+    p.ball(C + axis * 0.36, (0.04, 0.04, 0.03), light, rot=lie, seg=8)             # stalk end
+    return p
+
+
 PROPS = [("bomb", bomb()), ("floor_a", floor(V(0.36, 0.62, 0.22))), ("floor_b", floor(V(0.27, 0.52, 0.17))),
          ("wall_pillar", wall_pillar()), ("crate", crate()), ("wall_brick", wall_brick()),
-         ("wall_brick_low", wall_brick(1)), ("spawn_marker", spawn_marker())]
+         ("wall_brick_low", wall_brick(1)), ("spawn_marker", spawn_marker()),
+         ("yarn_ball", yarn_ball()), ("tuna_can", tuna_can()), ("catnip", catnip()),
+         ("paw_swipe", paw_swipe()), ("nine_lives", nine_lives()), ("cucumber", cucumber())]
 for i, (name, prop) in enumerate(PROPS):
     prop.finish(name, i * 1.5)

@@ -19,8 +19,10 @@ static func problems(map: MapData) -> PackedStringArray:
 				+ "it needs a free Tile beside it and another above or below it.") % point)
 
 	var powerups := 0
-	for amount: int in map.powerup_pool.values():
-		powerups += amount
+	for powerup: StringName in map.powerup_pool:
+		powerups += map.powerup_pool[powerup]
+		if not Powerup.exists(powerup):
+			found.append("The Powerup Pool names \"%s\", which is not a Powerup." % powerup)
 	var crates := map.tiles.count(MapData.Tile.CRATE)
 	if powerups > crates:
 		found.append("The Powerup Pool holds %d Powerups but the Map has only %d Crates." % [powerups, crates])

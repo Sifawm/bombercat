@@ -5,8 +5,16 @@ extends RefCounted
 ## are there to be read. The same commands on the same steps always give the same Round.
 
 signal bomb_placed(bomb: Bomb)
+## A pushed Bomb slid from the Tile `from` onto `bomb.tile`.
+signal bomb_moved(bomb: Bomb, from: Vector2i)
 signal bomb_detonated(bomb: Bomb, tiles: Array[Vector2i])
 signal crate_destroyed(tile: Vector2i)
+signal powerup_revealed(tile: Vector2i, powerup: Powerup)
+signal powerup_collected(player: int, powerup: Powerup)
+signal powerup_destroyed(tile: Vector2i, powerup: Powerup)
+signal curse_started(player: int, curse: Curse)
+signal curse_ended(player: int, curse: Curse)
+signal nine_lives_consumed(player: int)
 signal cat_eliminated(player: int)
 ## `winner` is a Player index or DRAW.
 signal round_ended(winner: int)
@@ -23,6 +31,7 @@ var bombs: Array[Bomb] = []
 var time_left: float
 var finished := false
 
+var _random: RandomNumberGenerator
 var _moves: Array[Vector2i] = []
 var _bomb_requests: Array[bool] = []
 ## Crates reached by this step's Explosions. They stay on the Board until every Bomb of the
@@ -30,10 +39,21 @@ var _bomb_requests: Array[bool] = []
 var _doomed_crates: Array[Vector2i] = []
 
 
-## `spawn_points` holds one Spawn Point per Player.
-func _init(map: MapData, game_config: GameConfig, spawn_points: Array[Vector2i]) -> void:
+## `spawn_points` holds one Spawn Point per Player. `random` decides everything left to
+## chance; pass one with a known seed to get a reproducible Round.
+func _init(map: MapData, game_config: GameConfig, spawn_points: Array[Vector2i],
+		random: RandomNumberGenerator = RandomNumberGenerator.new()) -> void:
 	config = game_config
 	board = Board.new(map)
+	_random = random
+	var crates: Array[Vector2i] = []
+	for y in map.size.y:
+		for x in map.size.x:
+			if map.tile_at(Vector2i(x, y)) == MapData.Tile.CRATE:
+				crates.append(Vector2i(x, y))
+	var hidden := PowerupPool.distribute(map.powerup_pool, crates, _random)
+	for tile in hidden:
+		board.hidden_powerups[tile] = Powerup.create(hidden[tile])
 	time_left = config.round_time
 	for tile in spawn_points:
 		var cat := CatState.new()
@@ -67,23 +87,45 @@ func step(delta: float) -> void:
 			continue
 		if _bomb_requests[player]:
 			_place_bomb(player)
-		Movement.move(cat, board, _moves[player], cat.speed * delta, config.corner_assist)
+		var direction := _moves[player]
+		var speed := cat.speed
+		if cat.curse != null:
+			direction = cat.curse.redirect(direction)
+			speed *= cat.curse.speed_factor(config)
+		var blocked := Movement.move(cat, board, direction, speed * delta, config.corner_assist)
+		if cat.paw_swipe and board.bombs.has(blocked):
+			board.bombs[blocked].slide = direction
+		_collect(player)
+		_tick_effects(player, delta)
 	_bomb_requests.fill(false)
 
 	for bomb: Bomb in bombs.duplicate():
 		if not bombs.has(bomb):
 			continue  # went off in a Chain Reaction earlier in this step
+		_slide(bomb, delta)
 		bomb.fuse_left -= delta
-		if bomb.fuse_left <= 0.0:
+		if bomb.fuse_left <= 0.0 or board.explosions.has(bomb.tile):
 			_detonate(bomb)
+	# Powerups come out only now, so the Explosion that broke a Crate cannot destroy what was in it.
 	for tile in _doomed_crates:
 		board.destroy_crate(tile)
 		crate_destroyed.emit(tile)
+		if board.hidden_powerups.has(tile):
+			board.powerups[tile] = board.hidden_powerups[tile]
+			board.hidden_powerups.erase(tile)
+			powerup_revealed.emit(tile, board.powerups[tile])
 	_doomed_crates.clear()
 
 	for player in cats.size():
-		if cats[player].alive and board.explosions.has(cats[player].tile()):
-			cats[player].alive = false
+		var cat := cats[player]
+		if not cat.alive or cat.invulnerable_left > 0.0 or not board.explosions.has(cat.tile()):
+			continue
+		if cat.nine_lives:
+			cat.nine_lives = false
+			cat.invulnerable_left = config.nine_lives_invulnerability
+			nine_lives_consumed.emit(player)
+		else:
+			cat.alive = false
 			cat_eliminated.emit(player)
 	for tile: Vector2i in board.explosions.keys():
 		board.explosions[tile] -= delta
@@ -103,6 +145,57 @@ func step(delta: float) -> void:
 		_finish(alive[0])
 	elif time_left <= 0.0:
 		_finish(DRAW)
+
+
+func _collect(player: int) -> void:
+	var cat := cats[player]
+	var tile := cat.tile()
+	if not board.powerups.has(tile):
+		return
+	var powerup := board.powerups[tile]
+	var curse_before := cat.curse
+	board.powerups.erase(tile)
+	cat.collected.append(powerup.id)
+	powerup.apply(cat, config, _random)
+	powerup_collected.emit(player, powerup)
+	if cat.curse != curse_before:
+		if curse_before != null:
+			curse_ended.emit(player, curse_before)
+		curse_started.emit(player, cat.curse)
+
+
+## Runs down the Cat's timed effects.
+func _tick_effects(player: int, delta: float) -> void:
+	var cat := cats[player]
+	cat.invulnerable_left = maxf(cat.invulnerable_left - delta, 0.0)
+	if cat.curse != null:
+		cat.curse.time_left -= delta
+		if cat.curse.time_left <= 0.0:
+			var ended := cat.curse
+			cat.curse = null
+			curse_ended.emit(player, ended)
+
+
+## Advances a pushed Bomb Tile by Tile until something is in its way.
+func _slide(bomb: Bomb, delta: float) -> void:
+	if bomb.slide == Vector2i.ZERO:
+		return
+	bomb.slide_progress += config.bomb_slide_speed * delta
+	while bomb.slide != Vector2i.ZERO:
+		var next := bomb.tile + bomb.slide
+		var cat_in_the_way := cats.any(func(cat: CatState) -> bool: return cat.alive and cat.tile() == next)
+		if not board.is_walkable(next) or cat_in_the_way:
+			bomb.slide = Vector2i.ZERO
+			bomb.slide_progress = 0.0
+		elif bomb.slide_progress >= 1.0:
+			var from := bomb.tile
+			board.bombs.erase(from)
+			board.bombs[next] = bomb
+			bomb.tile = next
+			bomb.slide_progress -= 1.0
+			bomb_moved.emit(bomb, from)
+		else:
+			break
 
 
 func _place_bomb(player: int) -> void:
@@ -137,6 +230,9 @@ func _detonate(first: Bomb) -> void:
 				if kind == MapData.Tile.WALL:
 					break
 				tiles.append(tile)
+				if board.powerups.has(tile):
+					powerup_destroyed.emit(tile, board.powerups[tile])
+					board.powerups.erase(tile)
 				if kind == MapData.Tile.CRATE:
 					if not _doomed_crates.has(tile):
 						_doomed_crates.append(tile)

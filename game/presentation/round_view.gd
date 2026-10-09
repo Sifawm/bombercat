@@ -13,6 +13,7 @@ const BOMB: PackedScene = preload("res://assets/models/bomb.glb")
 ## The Cat models are about 1.2 m tall; this fits them to a 1 m Tile.
 const CAT_SCALE := 0.72
 const BOMB_SCALE := 0.8
+const POWERUP_SCALE := 1.2
 const CAMERA_PITCH := deg_to_rad(57.0)
 const RESULT_SECONDS := 2.5
 
@@ -29,6 +30,7 @@ var _cat_animations: Array[AnimationPlayer] = []
 var _cat_moving: Array[bool] = []
 var _bomb_nodes: Dictionary[Bomb, Node3D] = {}
 var _crate_nodes: Dictionary[Vector2i, Node3D] = {}
+var _powerup_nodes: Dictionary[Vector2i, Node3D] = {}
 
 @onready var _camera: Camera3D = $Camera
 @onready var _timer_label: Label = $Hud/Timer
@@ -56,7 +58,14 @@ func _process(_delta: float) -> void:
 	for player in _cat_nodes.size():
 		_show_cat(player)
 	for bomb in _bomb_nodes:
-		_bomb_nodes[bomb].scale = Vector3.ONE * BOMB_SCALE * _bomb_pulse(bomb)
+		var node := _bomb_nodes[bomb]
+		node.scale = Vector3.ONE * BOMB_SCALE * _bomb_pulse(bomb)
+		node.position = _to_world(Vector2(bomb.tile) + Vector2(bomb.slide) * bomb.slide_progress)
+	var seconds_played := Time.get_ticks_msec() / 1000.0
+	for tile in _powerup_nodes:
+		var node := _powerup_nodes[tile]
+		node.position = _to_world(Vector2(tile)) + Vector3.UP * (0.25 + 0.08 * sin(seconds_played * 3.0))
+		node.rotation.y = seconds_played * 1.5
 	var seconds := ceili(maxf(_round.time_left, 0.0))
 	_timer_label.text = "%d:%02d" % [seconds / 60, seconds % 60]
 
@@ -71,6 +80,7 @@ func _start_round() -> void:
 	_cat_moving.clear()
 	_bomb_nodes.clear()
 	_crate_nodes.clear()
+	_powerup_nodes.clear()
 	_result_label.text = ""
 
 	_map_node = map_scene.instantiate()
@@ -88,6 +98,9 @@ func _start_round() -> void:
 	_round.bomb_placed.connect(_on_bomb_placed)
 	_round.bomb_detonated.connect(_on_bomb_detonated)
 	_round.crate_destroyed.connect(_on_crate_destroyed)
+	_round.powerup_revealed.connect(_on_powerup_revealed)
+	_round.powerup_collected.connect(_on_powerup_collected)
+	_round.powerup_destroyed.connect(_on_powerup_destroyed)
 	_round.cat_eliminated.connect(_on_cat_eliminated)
 	_round.round_ended.connect(_on_round_ended)
 
@@ -179,6 +192,27 @@ func _on_bomb_detonated(bomb: Bomb, tiles: Array[Vector2i]) -> void:
 func _on_crate_destroyed(tile: Vector2i) -> void:
 	_crate_nodes[tile].queue_free()
 	_crate_nodes.erase(tile)
+
+
+## A Powerup's model is the GLB named after its id.
+func _on_powerup_revealed(tile: Vector2i, powerup: Powerup) -> void:
+	var scene: PackedScene = load("res://assets/models/%s.glb" % powerup.id)
+	var node := _place(scene, tile)
+	node.scale = Vector3.ONE * POWERUP_SCALE
+	_powerup_nodes[tile] = node
+
+
+func _on_powerup_collected(player: int, _powerup: Powerup) -> void:
+	_remove_powerup(_round.cats[player].tile())
+
+
+func _on_powerup_destroyed(tile: Vector2i, _powerup: Powerup) -> void:
+	_remove_powerup(tile)
+
+
+func _remove_powerup(tile: Vector2i) -> void:
+	_powerup_nodes[tile].queue_free()
+	_powerup_nodes.erase(tile)
 
 
 func _on_cat_eliminated(player: int) -> void:
