@@ -14,6 +14,8 @@ var crates_destroyed: Array[int] = []
 var powerups_collected: Array[int] = []
 var current_round: Round
 var finished := false
+## The Player who won the Match, once it is finished.
+var winner := -1
 
 var _map: MapData
 var _spawn_points: Array[Vector2i]
@@ -38,15 +40,16 @@ func start_round() -> Round:
 	return current_round
 
 
-func _on_round_ended(winner: int) -> void:
+func _on_round_ended(round_winner: int) -> void:
 	for player in wins.size():
 		var cat := current_round.cats[player]
 		bombs_placed[player] += cat.bombs_placed
 		crates_destroyed[player] += cat.crates_destroyed
 		powerups_collected[player] += cat.collected.size()
-	if winner == Round.DRAW:
+	if round_winner == Round.DRAW:
 		return
-	wins[winner] += 1
-	if wins[winner] >= config.rounds_to_win:
+	wins[round_winner] += 1
+	if wins[round_winner] >= config.rounds_to_win:
 		finished = true
+		winner = round_winner
 		match_ended.emit(winner)

@@ -154,7 +154,7 @@ func _show_wins() -> void:
 
 
 func _held_text(cat: CatState) -> String:
-	var held: PackedStringArray = ["Bombs %d" % cat.bomb_capacity, "Range %d" % cat.bomb_range]
+	var held: PackedStringArray = ["Bomb Capacity %d" % cat.bomb_capacity, "Range %d" % cat.bomb_range]
 	if cat.collected.has(&"catnip"):
 		held.append("Catnip x%d" % cat.collected.count(&"catnip"))
 	if cat.paw_swipe:

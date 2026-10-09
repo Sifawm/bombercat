@@ -34,6 +34,7 @@ func test_the_first_cat_to_win_two_rounds_wins_the_match() -> void:
 	play_round_lost_by(game_match, 0)
 	check_eq(game_match.wins, [1, 2] as Array[int], "wins")
 	check_eq(match_events, [1] as Array[int], "Player 1 wins the Match")
+	check_eq(game_match.winner, 1, "the Match remembers its winner")
 	check(game_match.finished, "finished")
 
 

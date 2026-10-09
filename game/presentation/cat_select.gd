@@ -60,8 +60,10 @@ func _init() -> void:
 
 
 func _process(_delta: float) -> void:
+	var aimed_at := _cursors.duplicate()
 	for player in PLAYERS:
-		if _picks[player] != -1:
+		# The second check: the other Player confirmed this Cat first in this very frame.
+		if _picks[player] != -1 or _cursors[player] != aimed_at[player]:
 			continue
 		var step := int(Input.is_action_just_pressed(LocalPlayerController.action(player, "right"))) \
 				- int(Input.is_action_just_pressed(LocalPlayerController.action(player, "left")))

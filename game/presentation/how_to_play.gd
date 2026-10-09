@@ -5,6 +5,7 @@ extends ColorRect
 
 signal closed
 
+const CONFIG: GameConfig = preload("res://config/game_config.tres")
 const CONTROLS: Array[Array] = [
 	["", "Move", "Bomb"],
 	["Player 1", "W A S D", "Space"],
@@ -18,17 +19,25 @@ const POWERUPS: Array[Array] = [
 	[&"catnip", "Catnip", "Your Cat runs faster"],
 	[&"paw_swipe", "Paw Swipe", "Walk into a Bomb to push it"],
 	[&"nine_lives", "Nine Lives", "Survive one Explosion"],
-	[&"cucumber", "Cucumber", "A Curse for 10 s: inverted controls or slowness"],
+	[&"cucumber", "Cucumber", "A Curse for a while: inverted controls or slowness"],
 ]
 
 var _back: Button
+
+
+## Shows the card on top of `screen`; the focus goes back to `return_focus` when it closes.
+static func open_over(screen: Control, return_focus: Control) -> void:
+	var card := HowToPlay.new()
+	card.closed.connect(return_focus.grab_focus)
+	screen.add_child(card)
 
 
 func _init() -> void:
 	color = Color(0.08, 0.1, 0.16, 0.96)
 	var column := Ui.centred_column(self)
 	column.add_child(Ui.label("How to Play", 72))
-	column.add_child(Ui.label("Trap the other Cat in your Explosions. First to win 2 Rounds wins the Match.", Ui.SMALL_SIZE))
+	column.add_child(Ui.label("Trap the other Cat in your Explosions. First to win %d Rounds wins the Match." % CONFIG.rounds_to_win,
+		Ui.SMALL_SIZE))
 	var controls := GridContainer.new()
 	controls.columns = 3
 	controls.add_theme_constant_override("h_separation", 64)

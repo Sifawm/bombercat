@@ -52,11 +52,12 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _close() -> void:
+	for child in get_children():
+		if child is HowToPlay:  # closed with Start while the card was open
+			child.queue_free()
 	visible = false
 	get_tree().paused = false
 
 
 func _show_how_to_play() -> void:
-	var card := HowToPlay.new()
-	card.closed.connect(_resume.grab_focus)
-	add_child(card)
+	HowToPlay.open_over(self, _resume)

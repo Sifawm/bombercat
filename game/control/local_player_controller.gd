@@ -12,6 +12,8 @@ const PAD_BUTTONS: Dictionary[String, JoyButton] = {
 	"right": JOY_BUTTON_DPAD_RIGHT, "bomb": JOY_BUTTON_A,
 }
 ## Left stick: the axis and which side of it.
+## How far the stick must be pushed; high enough that a sideways drift does not turn the Cat.
+const STICK_DEADZONE := 0.5
 const PAD_STICK: Dictionary[String, Array] = {
 	"up": [JOY_AXIS_LEFT_Y, -1.0], "down": [JOY_AXIS_LEFT_Y, 1.0],
 	"left": [JOY_AXIS_LEFT_X, -1.0], "right": [JOY_AXIS_LEFT_X, 1.0],
@@ -35,10 +37,13 @@ static func register_actions() -> void:
 			var action_name := action(slot, control)
 			if InputMap.has_action(action_name):
 				continue
-			InputMap.add_action(action_name)
+			InputMap.add_action(action_name, STICK_DEADZONE)
 			var key := InputEventKey.new()
 			key.physical_keycode = KEYS[slot][control]
 			InputMap.action_add_event(action_name, key)
+			# ponytail: slot N listens to joypad device N. Some keyboards register as a joypad
+			# and take a device number; pick devices from Input.get_connected_joypads() if
+			# that gets in a Player's way.
 			var button := InputEventJoypadButton.new()
 			button.device = slot
 			button.button_index = PAD_BUTTONS[control]

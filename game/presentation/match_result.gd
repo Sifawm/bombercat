@@ -5,12 +5,15 @@ extends Control
 signal rematch_pressed
 signal cat_select_pressed
 
+## The buttons wake up late, so a bomb press meant for the Round does not skip the screen.
+const BUTTONS_DELAY := 1.0
+
 var _rematch: Button
 
 
 ## `picks` holds the index in Roster.CATS of each Player's Cat.
 func _init(game_match: Match, picks: Array[int]) -> void:
-	var winner := game_match.wins.find(game_match.wins.max())
+	var winner := game_match.winner
 	var column := Ui.centred_column(self)
 	column.add_child(Ui.label("%s wins the Match!" % Roster.cat_name(picks[winner]), Ui.TITLE_SIZE,
 		Roster.PLAYER_COLORS[winner]))
@@ -49,3 +52,9 @@ func _init(game_match: Match, picks: Array[int]) -> void:
 
 func _ready() -> void:
 	_rematch.grab_focus()
+	var buttons := _rematch.get_parent().get_children()
+	for button: Button in buttons:
+		button.disabled = true
+	create_tween().tween_callback(func() -> void:
+		for button: Button in buttons:
+			button.disabled = false).set_delay(BUTTONS_DELAY)

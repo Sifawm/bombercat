@@ -1,5 +1,6 @@
 class_name TitleScreen
 extends Control
+## The first screen: the game's name, the five Cats and the way into a Match.
 
 signal play_pressed
 
@@ -33,6 +34,4 @@ func _ready() -> void:
 
 
 func _show_how_to_play() -> void:
-	var card := HowToPlay.new()
-	card.closed.connect(_how_to_play.grab_focus)
-	add_child(card)
+	HowToPlay.open_over(self, _how_to_play)
