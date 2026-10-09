@@ -16,9 +16,6 @@ const BOMB_SCALE := 0.8
 const CAMERA_PITCH := deg_to_rad(57.0)
 const RESULT_SECONDS := 2.5
 
-## Set by Map Studio's test-play to run the Map being edited instead of `map_scene`.
-static var test_map: PackedScene
-
 @export var config: GameConfig
 @export var map_scene: PackedScene
 
@@ -39,8 +36,6 @@ var _crate_nodes: Dictionary[Vector2i, Node3D] = {}
 
 
 func _ready() -> void:
-	if test_map != null:
-		map_scene = test_map
 	_start_round()
 
 
@@ -83,6 +78,11 @@ func _start_round() -> void:
 	var map := _map_node.to_map_data()
 	_map_node.prepare_for_play()
 	_frame_map(map.size)
+	if map.spawn_points.size() < CATS.size():
+		_result_label.text = "This Map needs %d Spawn Points" % CATS.size()
+		set_physics_process(false)
+		set_process(false)
+		return
 
 	_round = Round.new(map, config, map.farthest_spawn_points(CATS.size()))
 	_round.bomb_placed.connect(_on_bomb_placed)

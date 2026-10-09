@@ -1,8 +1,8 @@
 @tool
 class_name MapPalette
 extends RefCounted
-## The meshes a Map is painted with in Map Studio, built from the models so it never goes
-## stale. An Item's number is what a Map scene stores in each Tile: only ever append.
+## The meshes a Map is painted with in Map Studio, built from the models each time the
+## editor or the game starts (restart the editor after re-exporting a model). An Item's number is what a Map scene stores in each Tile: only ever append.
 
 enum Item { WALL_BRICK, WALL_BRICK_LOW, WALL_PILLAR, CRATE, SPAWN_MARKER }
 

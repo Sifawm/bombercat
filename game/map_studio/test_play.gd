@@ -3,5 +3,14 @@ extends RefCounted
 
 
 static func start(map: MapScene) -> void:
-	RoundView.test_map = load(map.scene_file_path)
-	map.get_tree().change_scene_to_file.call_deferred("res://presentation/round_view.tscn")
+	var scene: PackedScene = load("res://presentation/round_view.tscn")
+	var view: RoundView = scene.instantiate()
+	view.map_scene = load(map.scene_file_path)
+	_replace.call_deferred(map, view)  # the tree is still busy adding the Map
+
+
+static func _replace(map: MapScene, view: RoundView) -> void:
+	var tree := map.get_tree()
+	tree.root.add_child(view)
+	tree.current_scene = view
+	map.queue_free()
