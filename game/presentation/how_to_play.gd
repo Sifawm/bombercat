@@ -80,5 +80,6 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _close() -> void:
+	Audio.play(&"ui_cancel")
 	closed.emit()
 	queue_free()

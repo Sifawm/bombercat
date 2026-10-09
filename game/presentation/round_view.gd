@@ -18,11 +18,11 @@ const COUNTDOWN_SECONDS := 3.0
 const GO_SECONDS := 0.6
 const PORTRAIT_SIZE := Vector2(120, 120)
 ## Seconds an Explosion takes to reach each further Tile, so it grows outwards.
-const EXPLOSION_SPREAD := 0.015
+const EXPLOSION_SPREAD := 0.035
 const SHAKE := 0.12
 ## Shake left after one second.
 const SHAKE_DECAY := 0.002
-## The final elimination: game speed, how long it lasts and how far the camera closes in.
+## The final elimination: how slow time runs, for how long, and how far the camera closes in.
 const SLOW_MOTION_SCALE := 0.3
 const SLOW_MOTION_SECONDS := 1.2
 const ZOOM_FOV := 20.0
@@ -49,15 +49,16 @@ var _cat_views: Array[CatView] = []
 ## Whether each Cat moved in the last rules step.
 var _cat_moving: Array[bool] = []
 var _bomb_views: Dictionary[Bomb, BombView] = {}
-## Pushed Bombs still sliding; their swipe has already sounded.
+## Pushed Bombs still sliding; their swipe has already sounded and they bounce when they stop.
 var _sliding_bombs: Array[Bomb] = []
 var _crate_nodes: Dictionary[Vector2i, Node3D] = {}
 var _powerup_nodes: Dictionary[Vector2i, Node3D] = {}
 var _shake := 0.0
-## Bombs detonated in the current rules step; more than one is a Chain Reaction.
+## Bombs detonated in the current rules step; from the second on they sound stronger.
 var _detonations := 0
 var _slow_motion := false
 var _hurry_second := 0
+var _music_is_faster := false
 var _hud_players: Control
 var _wins_labels: Array[Label] = []
 var _held_labels: Array[Label] = []
@@ -90,7 +91,9 @@ func _physics_process(delta: float) -> void:
 	if _countdown_left > 0.0:
 		var second := ceili(_countdown_left)
 		_countdown_left -= delta
-		if _countdown_left <= 0.0:
+		if _countdown_left > COUNTDOWN_SECONDS:
+			pass  # the Cats are still dropping in
+		elif _countdown_left <= 0.0:
 			_result_label.text = "Go!"
 			Audio.play(&"go")
 		elif ceili(_countdown_left) != second or _result_label.text == "":
@@ -120,8 +123,9 @@ func _process(delta: float) -> void:
 	for bomb in _bomb_views:
 		_bomb_views[bomb].position = _to_world(Vector2(bomb.tile) + Vector2(bomb.slide) * bomb.slide_progress)
 		_bomb_views[bomb].show_state(bomb, config.fuse)
-		if bomb.slide == Vector2i.ZERO:
+		if bomb.slide == Vector2i.ZERO and _sliding_bombs.has(bomb):
 			_sliding_bombs.erase(bomb)
+			_bomb_views[bomb].bounce()
 	var seconds_played := Time.get_ticks_msec() / 1000.0
 	for tile in _powerup_nodes:
 		var node := _powerup_nodes[tile]
@@ -213,7 +217,9 @@ func _show_time() -> void:
 	if hurry and seconds != _hurry_second:
 		_hurry_second = seconds
 		Audio.play(&"warning")
-	Audio.play_music(&"music_round", FASTER_MUSIC if _round.time_left <= FASTER_MUSIC_SECONDS else 1.0)
+	if _round.time_left <= FASTER_MUSIC_SECONDS and not _music_is_faster:
+		_music_is_faster = true
+		Audio.play_music(&"music_round", FASTER_MUSIC)
 
 
 func _start_round() -> void:
@@ -230,13 +236,15 @@ func _start_round() -> void:
 	_result_label.text = ""
 	_slow_motion = false
 	_hurry_second = 0
+	_music_is_faster = false
+	Audio.play_music(&"music_round")
 
 	_map_node = map_scene.instantiate()
 	_world.add_child(_map_node)
 	var map := _map_node.to_map_data()
 	_map_node.prepare_for_play()
 	_frame_map(map.size)
-	_countdown_left = COUNTDOWN_SECONDS
+	_countdown_left = CatView.DROP_SECONDS + COUNTDOWN_SECONDS
 
 	_round = _match.start_round()
 	_round.bomb_placed.connect(_on_bomb_placed)
@@ -246,7 +254,6 @@ func _start_round() -> void:
 	_round.powerup_revealed.connect(_on_powerup_revealed)
 	_round.powerup_collected.connect(_on_powerup_collected)
 	_round.powerup_destroyed.connect(_on_powerup_destroyed)
-	_round.curse_started.connect(func(_player: int, _curse: Curse) -> void: Audio.play(&"cucumber"))
 	_round.nine_lives_consumed.connect(_on_nine_lives_consumed)
 	_round.cat_eliminated.connect(_on_cat_eliminated)
 	_round.round_ended.connect(_on_round_ended)
@@ -336,7 +343,7 @@ func _on_bomb_detonated(bomb: Bomb, tiles: Array[Vector2i]) -> void:
 			_place(Effects.burst(Color(1.0, 0.6, 0.15), 6, 4.0, 0.35, 0.12), Vector2(tile), 0.4)
 			_place(Effects.burst(Color(0.3, 0.3, 0.3, 0.45), 4, 0.8, 0.9, 0.2, Vector3.UP * 2.0), Vector2(tile), 0.5))
 		tween.tween_property(explosion, "scale", Vector3.ONE, 0.08)
-		tween.tween_interval(config.explosion_lifetime - 0.16 - reach)
+		tween.tween_interval(maxf(config.explosion_lifetime - 0.16 - reach, 0.0))
 		tween.tween_property(explosion, "scale", Vector3.ZERO, 0.08)
 		tween.tween_callback(explosion.queue_free)
 
@@ -359,14 +366,16 @@ func _on_powerup_revealed(tile: Vector2i, powerup: Powerup) -> void:
 	_powerup_nodes[tile] = node
 
 
-## The collected Powerup rises over the Cat and shrinks away.
-func _on_powerup_collected(player: int, _powerup: Powerup) -> void:
+## The collected Powerup rises over the Cat and shrinks away. A Powerup sounds like the
+## others unless there is a "collect_<id>" sound of its own.
+func _on_powerup_collected(player: int, powerup: Powerup) -> void:
 	var node := _take_powerup_node(_round.cats[player].tile())
 	var tween := node.create_tween().set_parallel()
 	tween.tween_property(node, "position:y", node.position.y + 1.6, 0.5).set_ease(Tween.EASE_OUT)
 	tween.tween_property(node, "scale", Vector3.ZERO, 0.5).set_ease(Tween.EASE_IN)
 	tween.chain().tween_callback(node.queue_free)
-	Audio.play(&"powerup")
+	var own_sound := StringName("collect_" + powerup.id)
+	Audio.play(own_sound if Audio.has(own_sound) else &"powerup")
 
 
 func _on_powerup_destroyed(tile: Vector2i, _powerup: Powerup) -> void:
@@ -400,7 +409,7 @@ func _show_final_elimination(where: Vector3) -> void:
 	_slow_motion = true
 	Engine.time_scale = SLOW_MOTION_SCALE
 	var framed := _camera.position
-	var closer := framed + (where - _to_world(Vector2(_match.current_round.board.size - Vector2i.ONE) / 2.0)) * 0.5
+	var closer := framed + (where - _to_world(Vector2(_round.board.size - Vector2i.ONE) / 2.0)) * 0.5
 	var tween := create_tween().set_ignore_time_scale().set_parallel()
 	tween.tween_property(_camera, "fov", ZOOM_FOV, 0.3)
 	tween.tween_property(_camera, "position", closer, 0.3)

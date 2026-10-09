@@ -12,23 +12,31 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS  # menus also sound while the game is paused
 	_music.bus = &"Music"
 	add_child(_music)
-	get_viewport().gui_focus_changed.connect(func(_control: Control) -> void: play(&"ui_move"))
 
 
+## Moving through a menu sounds here, for every menu at once; confirming and cancelling
+## sound where they happen.
 func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel"):
-		play(&"ui_cancel")
+	if get_viewport().gui_get_focus_owner() == null:
+		return
+	for direction: String in ["ui_up", "ui_down", "ui_left", "ui_right"]:
+		if event.is_action_pressed(direction):
+			play(&"ui_move")
+
+
+func has(sound: StringName) -> bool:
+	return ResourceLoader.exists(FOLDER + sound + ".wav")
 
 
 ## Plays the effect in assets/audio named `sound`.
 func play(sound: StringName, pitch: float = 1.0) -> void:
-	var player := AudioStreamPlayer.new()
-	player.stream = load(FOLDER + sound + ".wav")
-	player.bus = &"Effects"
-	player.pitch_scale = pitch
-	player.finished.connect(player.queue_free)
-	add_child(player)
-	player.play()
+	var voice := AudioStreamPlayer.new()
+	voice.stream = load(FOLDER + sound + ".wav")
+	voice.bus = &"Effects"
+	voice.pitch_scale = pitch
+	voice.finished.connect(voice.queue_free)
+	add_child(voice)
+	voice.play()
 
 
 ## Loops the music named `music` at `speed`; asking for the one already playing only

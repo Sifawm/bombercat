@@ -6,7 +6,7 @@ extends PlayerController
 const KEYS: Array[Dictionary] = [
 	{"up": KEY_W, "down": KEY_S, "left": KEY_A, "right": KEY_D, "bomb": KEY_SPACE, "meow": KEY_Q},
 	{"up": KEY_UP, "down": KEY_DOWN, "left": KEY_LEFT, "right": KEY_RIGHT, "bomb": KEY_ENTER,
-		"meow": KEY_SHIFT},  # the right one,
+		"meow": KEY_SHIFT},  # only the right-hand one, see register_actions,
 ]
 const PAD_BUTTONS: Dictionary[String, JoyButton] = {
 	"up": JOY_BUTTON_DPAD_UP, "down": JOY_BUTTON_DPAD_DOWN, "left": JOY_BUTTON_DPAD_LEFT,

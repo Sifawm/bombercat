@@ -17,8 +17,8 @@ and run it again.
 | `explosion.wav` | Explosion | `art/build_audio.py` | CC0 1.0 |
 | `explosion_chain.wav` | Further Explosions of a Chain Reaction | `art/build_audio.py` | CC0 1.0 |
 | `crate_break.wav` | Crate destroyed | `art/build_audio.py` | CC0 1.0 |
-| `powerup.wav` | Powerup collected | `art/build_audio.py` | CC0 1.0 |
-| `cucumber.wav` | A Curse starts | `art/build_audio.py` | CC0 1.0 |
+| `powerup.wav` | Powerup collected (any without a `collect_<id>.wav` of its own) | `art/build_audio.py` | CC0 1.0 |
+| `collect_cucumber.wav` | Cucumber collected | `art/build_audio.py` | CC0 1.0 |
 | `paw_swipe.wav` | A Bomb is pushed with Paw Swipe | `art/build_audio.py` | CC0 1.0 |
 | `nine_lives.wav` | Nine Lives absorbs an Explosion | `art/build_audio.py` | CC0 1.0 |
 | `death.wav` | A Cat is eliminated | `art/build_audio.py` | CC0 1.0 |

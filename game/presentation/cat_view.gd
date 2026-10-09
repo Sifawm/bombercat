@@ -9,6 +9,8 @@ const DROP_SECONDS := 0.7
 const BLINKS_PER_SECOND := 8.0
 const MEOW_SECONDS := 0.9
 
+static var _spiral_image: Texture2D
+
 var _model: Node3D
 var _animations: AnimationPlayer
 var _meshes: Array[MeshInstance3D] = []
@@ -17,6 +19,7 @@ var _curse_tint := Effects.flat_material(Color(0.2, 0.9, 0.2, 0.4))
 var _spiral := MeshInstance3D.new()
 var _trail := Effects.cubes(Color(0.5, 1.0, 0.4), 14, 0.35, 0.12)
 var _bubble := Label3D.new()
+var _bubble_timer: Tween
 
 
 func _init(scene: PackedScene) -> void:
@@ -53,7 +56,9 @@ func _init(scene: PackedScene) -> void:
 	_bubble.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_bubble.no_depth_test = true
 	_bubble.font_size = 96
-	_bubble.outline_size = 24
+	_bubble.outline_size = 48  # black on a thick white outline: the speech bubble
+	_bubble.modulate = Color.BLACK
+	_bubble.outline_modulate = Color.WHITE
 	_bubble.pixel_size = 0.004
 	_bubble.position.y = 1.4
 	_bubble.visible = false
@@ -91,14 +96,20 @@ func drop() -> void:
 func meow() -> void:
 	Audio.play(&"meow", randf_range(0.9, 1.15))
 	_bubble.visible = true
-	create_tween().tween_callback(func() -> void: _bubble.visible = false).set_delay(MEOW_SECONDS)
+	if _bubble_timer != null:
+		_bubble_timer.kill()  # a new meow keeps the bubble up
+	_bubble_timer = create_tween()
+	_bubble_timer.tween_callback(func() -> void: _bubble.visible = false).set_delay(MEOW_SECONDS)
 
 
-## A white spiral on a clear background, drawn once for every Cat.
+## A white spiral on a clear background, drawn once and shared by every Cat.
 static func _spiral_texture() -> Texture2D:
+	if _spiral_image != null:
+		return _spiral_image
 	var image := Image.create(64, 64, false, Image.FORMAT_RGBA8)
 	for step in 600:
 		var turn := step / 600.0
 		var point := Vector2(32, 32) + Vector2.from_angle(turn * TAU * 3.0) * turn * 29.0
 		image.fill_rect(Rect2i(Vector2i(point) - Vector2i.ONE, Vector2i(3, 3)), Color.WHITE)
-	return ImageTexture.create_from_image(image)
+	_spiral_image = ImageTexture.create_from_image(image)
+	return _spiral_image

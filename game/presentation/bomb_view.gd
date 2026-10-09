@@ -10,19 +10,26 @@ const FASTEST_BEAT := 7.0
 
 var _blink := Effects.flat_material(Color(1.0, 0.1, 0.05, 0.0))
 var _beats_ticked := 0
+var _model: Node3D = MODEL.instantiate()
 
 
 func _init() -> void:
-	var model: Node3D = MODEL.instantiate()
-	model.scale = Vector3.ONE * MODEL_SCALE
-	add_child(model)
-	for mesh: MeshInstance3D in model.find_children("*", "MeshInstance3D", true, false):
+	_model.scale = Vector3.ONE * MODEL_SCALE
+	add_child(_model)
+	for mesh: MeshInstance3D in _model.find_children("*", "MeshInstance3D", true, false):
 		mesh.material_overlay = _blink
 	var spark := Effects.cubes(Color(1.0, 0.85, 0.3), 8, 0.25, 0.07)
 	spark.position.y = 0.85
 	spark.spread = 60.0
 	spark.initial_velocity_max = 1.5
 	add_child(spark)
+
+
+## A small hop, for a pushed Bomb that has just hit something.
+func bounce() -> void:
+	var hop := create_tween()
+	hop.tween_property(_model, "position:y", 0.3, 0.08).set_ease(Tween.EASE_OUT)
+	hop.tween_property(_model, "position:y", 0.0, 0.25).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 
 
 ## Called every frame. `fuse` is the full Fuse of a Bomb.

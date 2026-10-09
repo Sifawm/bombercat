@@ -68,7 +68,7 @@ def mix(seconds, *parts):
 def sequence(shape, notes, note_seconds, decay=None, gap=0.0):
     """Notes (in Hz) one after another."""
     step = note_seconds + gap
-    return mix(step * len(notes), *[(i * step, tone(shape, hz, note_seconds, decay), 1.0) for i, hz in enumerate(notes)])
+    return mix(step * len(notes), *[(i * step, tone(shape, pitch, note_seconds, decay), 1.0) for i, pitch in enumerate(notes)])
 
 
 def hz(semitones_from_a4):
@@ -161,7 +161,7 @@ def build():
     save("crate_break", mix(0.3, (0, noise(0.3, 0.05, 300, 3500), 1.0), (0.04, noise(0.1, 0.02, 1500, 6000), 0.7),
                             (0.09, noise(0.1, 0.02, 800, 4000), 0.5), (0, tone("triangle", 160, 0.1, 0.03), 0.8)))
     save("powerup", sequence("square", [hz(3), hz(7), hz(10), hz(15)], 0.07, 0.08), 0.45)
-    save("cucumber", sequence("saw", [hz(3), hz(2), hz(-3), [(0, hz(-4)), (1, hz(-9))]], 0.13, 0.2), 0.7)
+    save("collect_cucumber", sequence("saw", [hz(3), hz(2), hz(-3), [(0, hz(-4)), (1, hz(-9))]], 0.13, 0.2), 0.7)
     save("paw_swipe", mix(0.22, (0, noise(0.22, 0.07, 1500, 7000), 0.8), (0, tone("sine", [(0, 300), (1, 1100)], 0.15, 0.06), 0.6)))
     save("nine_lives", mix(0.7, (0, tone("sine", hz(12), 0.7, 0.25), 1.0), (0.05, tone("sine", hz(19), 0.65, 0.25), 0.7),
                            (0.1, tone("sine", hz(24), 0.6, 0.2), 0.5)))
