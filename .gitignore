@@ -1,0 +1,6 @@
+# Godot
+.godot/
+
+# Blender
+*.blend1
+__pycache__/
