@@ -17,6 +17,7 @@ var _cursors: Array[int] = [0, 1]
 var _picks: Array[int] = [-1, -1]
 var _slots: Array[Control] = []
 var _cat_views: Array[ModelView] = []
+var _name_labels: Array[Label] = []
 ## Per slot, the marker of each Player.
 var _markers: Array[Array] = []
 var _status: Label
@@ -44,7 +45,8 @@ func _init() -> void:
 			view.play("idle")
 			_cat_views.append(view)
 			slot.add_child(view)
-			slot.add_child(Ui.label(Roster.cat_name(index)))
+			_name_labels.append(Ui.label(Roster.cat_name(index)))
+			slot.add_child(_name_labels[index])
 		else:
 			var question := Ui.label("?", 200)
 			question.custom_minimum_size = Vector2(260, 320)
@@ -118,4 +120,7 @@ func _refresh() -> void:
 			var marker: Label = _markers[index][player]
 			marker.visible = _cursors[player] == index
 			marker.text = "P%d%s" % [player + 1, " READY" if _picks[player] != -1 else ""]
+	# A locked Cat wears its Player's colour.
+	for index in _name_labels.size():
+		_name_labels[index].modulate = Roster.PLAYER_COLORS[_picks.find(index)] if _picks.has(index) else Color.WHITE
 	_status.text = "Move left or right, confirm with your bomb button"

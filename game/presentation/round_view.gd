@@ -16,7 +16,6 @@ const RESULT_SECONDS := 2.5
 const COUNTDOWN_SECONDS := 3.0
 ## How long "Go!" stays on screen.
 const GO_SECONDS := 0.6
-const PORTRAIT_SIZE := Vector2(120, 120)
 ## Seconds an Explosion takes to reach each further Tile, so it grows outwards.
 const EXPLOSION_SPREAD := 0.035
 const SHAKE := 0.12
@@ -59,9 +58,7 @@ var _detonations := 0
 var _slow_motion := false
 var _hurry_second := 0
 var _music_is_faster := false
-var _hud_players: Control
-var _wins_labels: Array[Label] = []
-var _held_labels: Array[Label] = []
+var _hud: RoundHud
 var _pause_menu := PauseMenu.new()
 
 @onready var _camera: Camera3D = $Camera
@@ -135,8 +132,8 @@ func _process(delta: float) -> void:
 	_camera.h_offset = randf_range(-1.0, 1.0) * _shake
 	_camera.v_offset = randf_range(-1.0, 1.0) * _shake
 	_show_time()
-	for player in _held_labels.size():
-		_held_labels[player].text = _held_text(_round.cats[player])
+	for player in _round.cats.size():
+		_hud.show_held(player, Powerup.held_by(_round.cats[player]))
 
 
 ## Starts a new Match between the Cats in `cat_picks`.
@@ -150,60 +147,17 @@ func start_match() -> void:
 		set_process(false)
 		return
 	_match = Match.new(map, config, cat_picks.size())
-	_build_hud()
+	if _hud != null:
+		_hud.queue_free()
+	_hud = RoundHud.new(cat_picks)
+	$Hud.add_child(_hud)
+	$Hud.move_child(_hud, 0)
+	_show_wins()
 	_start_round()
 
 
-## One panel per Player along the top: portrait, Cat name, Rounds won and Powerups held.
-func _build_hud() -> void:
-	if _hud_players != null:
-		_hud_players.queue_free()
-	_wins_labels.clear()
-	_held_labels.clear()
-	var row := HBoxContainer.new()
-	row.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE, Control.PRESET_MODE_MINSIZE, 16)
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 520)  # leaves the middle to the timer
-	_hud_players = row
-	$Hud.add_child(row)
-	$Hud.move_child(row, 0)
-	for player in cat_picks.size():
-		var panel := HBoxContainer.new()
-		var portrait := ModelView.new(Roster.cat_scene(cat_picks[player]), PORTRAIT_SIZE)
-		portrait.play("idle")
-		var texts := VBoxContainer.new()
-		texts.custom_minimum_size.x = 480
-		var wins := Ui.label("", 0, Roster.PLAYER_COLORS[player])
-		var held := Ui.label("", Ui.SMALL_SIZE)
-		texts.add_child(wins)
-		texts.add_child(held)
-		_wins_labels.append(wins)
-		_held_labels.append(held)
-		panel.add_child(portrait)
-		panel.add_child(texts)
-		if player % 2 == 1:
-			panel.move_child(portrait, 1)  # mirrored on the right-hand side
-		row.add_child(panel)
-	_show_wins()
-
-
 func _show_wins() -> void:
-	for player in _wins_labels.size():
-		_wins_labels[player].text = "%s   %d / %d" % [
-			Roster.cat_name(cat_picks[player]), _match.wins[player], config.rounds_to_win]
-
-
-func _held_text(cat: CatState) -> String:
-	var held: PackedStringArray = ["Bomb Capacity %d" % cat.bomb_capacity, "Range %d" % cat.bomb_range]
-	if cat.collected.has(&"catnip"):
-		held.append("Catnip x%d" % cat.collected.count(&"catnip"))
-	if cat.paw_swipe:
-		held.append("Paw Swipe")
-	if cat.nine_lives:
-		held.append("Nine Lives")
-	if cat.curse != null:
-		held.append("Cursed!")
-	return "  ".join(held)
+	_hud.show_wins(_match.wins, config.rounds_to_win)
 
 
 ## The timer; in the last seconds it turns red, pulses and beeps, and the music speeds up.

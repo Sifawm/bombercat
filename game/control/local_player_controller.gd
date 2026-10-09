@@ -13,6 +13,8 @@ const PAD_BUTTONS: Dictionary[String, JoyButton] = {
 	"right": JOY_BUTTON_DPAD_RIGHT, "bomb": JOY_BUTTON_A, "meow": JOY_BUTTON_X,
 }
 ## Left stick: the axis and which side of it.
+## A device number no joypad has: what a slot without a gamepad listens to.
+const NO_DEVICE := 99
 ## How far the stick must be pushed; high enough that a sideways drift does not turn the Cat.
 const STICK_DEADZONE := 0.5
 const PAD_STICK: Dictionary[String, Array] = {
@@ -33,31 +35,40 @@ static func action(slot: int, control: String) -> StringName:
 ## Creates every slot's actions. The direction keys also join Godot's ui_* actions, so each
 ## Player moves through the menus with the keys it plays with (gamepads already do).
 static func register_actions() -> void:
+	if InputMap.has_action(action(0, "up")):
+		return
+	Input.joy_connection_changed.connect(_assign_gamepads.unbind(2))
 	for slot in KEYS.size():
 		for control: String in KEYS[slot]:
 			var action_name := action(slot, control)
-			if InputMap.has_action(action_name):
-				continue
 			InputMap.add_action(action_name, STICK_DEADZONE)
 			var key := InputEventKey.new()
 			key.physical_keycode = KEYS[slot][control]
 			if key.physical_keycode == KEY_SHIFT:
 				key.location = KEY_LOCATION_RIGHT
 			InputMap.action_add_event(action_name, key)
-			# ponytail: slot N listens to joypad device N. Some keyboards register as a joypad
-			# and take a device number; pick devices from Input.get_connected_joypads() if
-			# that gets in a Player's way.
 			var button := InputEventJoypadButton.new()
-			button.device = slot
 			button.button_index = PAD_BUTTONS[control]
 			InputMap.action_add_event(action_name, button)
 			if PAD_STICK.has(control):
 				var stick := InputEventJoypadMotion.new()
-				stick.device = slot
 				stick.axis = PAD_STICK[control][0]
 				stick.axis_value = PAD_STICK[control][1]
 				InputMap.action_add_event(action_name, stick)
 				InputMap.action_add_event("ui_" + control, key)
+	_assign_gamepads()
+
+
+## Gives each slot its gamepad: the first real one to the first slot, and so on. Device
+## numbers alone will not do, because some keyboards register as a joypad and take one.
+static func _assign_gamepads() -> void:
+	var gamepads := Input.get_connected_joypads().filter(Input.is_joy_known)
+	for slot in KEYS.size():
+		var device: int = gamepads[slot] if slot < gamepads.size() else NO_DEVICE
+		for control: String in KEYS[slot]:
+			for event in InputMap.action_get_events(action(slot, control)):
+				if event is InputEventJoypadButton or event is InputEventJoypadMotion:
+					event.device = device
 
 
 func _init(slot: int) -> void:
