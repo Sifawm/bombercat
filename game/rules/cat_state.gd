@@ -10,6 +10,9 @@ var bomb_capacity: int
 var bomb_range: int
 ## How many of this Cat's Bombs are on the Map right now.
 var active_bombs := 0
+## Tallies of this Round, for the Match summary.
+var bombs_placed := 0
+var crates_destroyed := 0
 ## Ids of the Powerups collected this Round, in order.
 var collected: Array[StringName] = []
 var paw_swipe := false

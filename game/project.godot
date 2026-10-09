@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="BomberCat"
-run/main_scene="res://presentation/round_view.tscn"
+run/main_scene="res://presentation/main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 
 [debug]
@@ -27,7 +27,13 @@ window/size/window_height_override=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="keep"
 
+[gui]
+
+theme/default_theme_scale=2.5
+
 [rendering]
+
+environment/defaults/default_clear_color=Color(0.13, 0.17, 0.27, 1)
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"

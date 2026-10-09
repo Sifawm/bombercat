@@ -1,43 +1,81 @@
 class_name LocalPlayerController
 extends PlayerController
-## A human on this machine. Bindings are fixed, one set per slot.
+## A human on this machine, on the keyboard or on the gamepad of its slot (both work at once).
+## Bindings are fixed, one set per slot.
 
 const KEYS: Array[Dictionary] = [
 	{"up": KEY_W, "down": KEY_S, "left": KEY_A, "right": KEY_D, "bomb": KEY_SPACE},
 	{"up": KEY_UP, "down": KEY_DOWN, "left": KEY_LEFT, "right": KEY_RIGHT, "bomb": KEY_ENTER},
 ]
+const PAD_BUTTONS: Dictionary[String, JoyButton] = {
+	"up": JOY_BUTTON_DPAD_UP, "down": JOY_BUTTON_DPAD_DOWN, "left": JOY_BUTTON_DPAD_LEFT,
+	"right": JOY_BUTTON_DPAD_RIGHT, "bomb": JOY_BUTTON_A,
+}
+## Left stick: the axis and which side of it.
+const PAD_STICK: Dictionary[String, Array] = {
+	"up": [JOY_AXIS_LEFT_Y, -1.0], "down": [JOY_AXIS_LEFT_Y, 1.0],
+	"left": [JOY_AXIS_LEFT_X, -1.0], "right": [JOY_AXIS_LEFT_X, 1.0],
+}
 
-var _prefix: String
+var _slot: int
 ## Whether the horizontal keys were pressed more recently than the vertical ones.
 var _horizontal_is_newer := false
 
 
+## The input action of a slot's "up", "down", "left", "right" or "bomb".
+static func action(slot: int, control: String) -> StringName:
+	return "p%d_%s" % [slot + 1, control]
+
+
+## Creates every slot's actions. The direction keys also join Godot's ui_* actions, so each
+## Player moves through the menus with the keys it plays with (gamepads already do).
+static func register_actions() -> void:
+	for slot in KEYS.size():
+		for control: String in KEYS[slot]:
+			var action_name := action(slot, control)
+			if InputMap.has_action(action_name):
+				continue
+			InputMap.add_action(action_name)
+			var key := InputEventKey.new()
+			key.physical_keycode = KEYS[slot][control]
+			InputMap.action_add_event(action_name, key)
+			var button := InputEventJoypadButton.new()
+			button.device = slot
+			button.button_index = PAD_BUTTONS[control]
+			InputMap.action_add_event(action_name, button)
+			if PAD_STICK.has(control):
+				var stick := InputEventJoypadMotion.new()
+				stick.device = slot
+				stick.axis = PAD_STICK[control][0]
+				stick.axis_value = PAD_STICK[control][1]
+				InputMap.action_add_event(action_name, stick)
+				InputMap.action_add_event("ui_" + control, key)
+
+
 func _init(slot: int) -> void:
-	_prefix = "p%d_" % (slot + 1)
-	for action: String in KEYS[slot]:
-		if InputMap.has_action(_prefix + action):
-			continue
-		var event := InputEventKey.new()
-		event.physical_keycode = KEYS[slot][action]
-		InputMap.add_action(_prefix + action)
-		InputMap.action_add_event(_prefix + action, event)
+	_slot = slot
+	register_actions()
 
 
 func drive(game_round: Round, player: int) -> void:
 	game_round.set_move(player, _direction())
-	if Input.is_action_just_pressed(_prefix + "bomb"):
+	if Input.is_action_just_pressed(action(_slot, "bomb")):
 		game_round.place_bomb(player)
 
 
 ## Four directions only. With keys of both axes held, the one pressed last wins, so a Player
 ## can hold a direction and tap the next one to turn.
 func _direction() -> Vector2i:
-	var x := int(Input.get_axis(_prefix + "left", _prefix + "right"))
-	var y := int(Input.get_axis(_prefix + "up", _prefix + "down"))
-	if Input.is_action_just_pressed(_prefix + "left") or Input.is_action_just_pressed(_prefix + "right"):
+	var x := int(_held("right")) - int(_held("left"))
+	var y := int(_held("down")) - int(_held("up"))
+	if Input.is_action_just_pressed(action(_slot, "left")) or Input.is_action_just_pressed(action(_slot, "right")):
 		_horizontal_is_newer = true
-	elif Input.is_action_just_pressed(_prefix + "up") or Input.is_action_just_pressed(_prefix + "down"):
+	elif Input.is_action_just_pressed(action(_slot, "up")) or Input.is_action_just_pressed(action(_slot, "down")):
 		_horizontal_is_newer = false
 	if x != 0 and (y == 0 or _horizontal_is_newer):
 		return Vector2i(x, 0)
 	return Vector2i(0, y)
+
+
+func _held(control: String) -> bool:
+	return Input.is_action_pressed(action(_slot, control))

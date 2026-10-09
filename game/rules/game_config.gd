@@ -36,3 +36,7 @@ extends Resource
 @export_group("Round")
 ## Seconds before a Round ends in a Draw.
 @export var round_time: float = 120.0
+
+@export_group("Match")
+## Round wins that win a Match.
+@export var rounds_to_win: int = 2

@@ -15,12 +15,12 @@ and [docs/spec-v1.md](docs/spec-v1.md) for what v1 is.
 ## Playing and testing
 
 ```sh
-godot --path game        # play: Player 1 WASD + Space, Player 2 arrows + Enter
+godot --path game        # play: Player 1 WASD + Space, Player 2 arrows + Enter, or a gamepad each
 game/run_tests.sh        # rules-layer tests, headless
 ```
 
 The game is three layers with one-way dependencies (see [ADR 0002](docs/adr/0002-rules-layer-owns-movement.md)):
-`game/rules/` (plain classes, owns all game state), `game/presentation/` (scenes that show it)
+`game/rules/` (plain classes, owns all game state), `game/presentation/` (the screens, started by `main.tscn`)
 and `game/control/` (Player controllers that issue commands). Balance values live in
 `game/config/game_config.tres`.
 
@@ -33,7 +33,7 @@ To make or edit one, open it in the Godot editor and select its root node:
   GridMap palette, on floor 0. Empty Tiles inside the painted area are Floor, laid automatically.
 - **Powerup Pool**: the root node's `powerup_pool` property in the inspector.
 - **Validation**: problems appear as the yellow warning icon next to the root node.
-- **Test-play**: press F6 (run current scene) with the Map open.
+- **Test-play**: press F6 (run current scene) with the Map open; it plays Matches on that Map.
 
 A new Map is a new scene whose root is a GridMap with the `maps/map_scene.gd` script.
 

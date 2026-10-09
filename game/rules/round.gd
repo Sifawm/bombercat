@@ -35,8 +35,9 @@ var _random: RandomNumberGenerator
 var _moves: Array[Vector2i] = []
 var _bomb_requests: Array[bool] = []
 ## Crates reached by this step's Explosions. They stay on the Board until every Bomb of the
-## step has detonated, so a Chain Reaction still clears a single layer of Crates.
-var _doomed_crates: Array[Vector2i] = []
+## step has detonated, so a Chain Reaction still clears a single layer of Crates. Each maps
+## to the Player whose Bomb reached it first.
+var _doomed_crates: Dictionary[Vector2i, int] = {}
 
 
 ## `spawn_points` holds one Spawn Point per Player. `random` decides everything left to
@@ -111,6 +112,7 @@ func step(delta: float) -> void:
 	# Powerups come out only now, so the Explosion that broke a Crate cannot destroy what was in it.
 	for tile in _doomed_crates:
 		board.destroy_crate(tile)
+		cats[_doomed_crates[tile]].crates_destroyed += 1
 		crate_destroyed.emit(tile)
 		if board.hidden_powerups.has(tile):
 			board.powerups[tile] = board.hidden_powerups[tile]
@@ -217,6 +219,7 @@ func _place_bomb(player: int) -> void:
 	bomb.bomb_range = cat.bomb_range
 	bomb.fuse_left = config.fuse
 	cat.active_bombs += 1
+	cat.bombs_placed += 1
 	bombs.append(bomb)
 	board.bombs[tile] = bomb
 	bomb_placed.emit(bomb)
@@ -240,7 +243,7 @@ func _detonate(first: Bomb) -> void:
 				tiles.append(tile)
 				if kind == MapData.Tile.CRATE:
 					if not _doomed_crates.has(tile):
-						_doomed_crates.append(tile)
+						_doomed_crates[tile] = bomb.owner
 					break
 				if board.bombs.has(tile):
 					pending.append(board.bombs[tile])

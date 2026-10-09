@@ -298,3 +298,11 @@ func test_a_curse_ends_when_its_cat_dies() -> void:
 func test_an_unknown_powerup_in_the_pool_is_left_out() -> void:
 	var game_round := make_round(ONE_CRATE, quick_config(), {&"laser_pointer": 1})
 	check(game_round.board.hidden_powerups.is_empty(), "nothing hidden")
+
+
+func test_a_cat_keeps_count_of_its_bombs_crates_and_powerups() -> void:
+	var game_round := round_with_collected(&"yarn_ball")
+	check_eq(game_round.cats[0].bombs_placed, 1, "Bombs placed")
+	check_eq(game_round.cats[0].crates_destroyed, 1, "Crates destroyed")
+	check_eq(game_round.cats[0].collected, [&"yarn_ball"] as Array[StringName], "Powerups collected")
+	check_eq(game_round.cats[1].crates_destroyed, 0, "the other Cat destroyed nothing")
