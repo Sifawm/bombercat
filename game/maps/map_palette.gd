@@ -28,7 +28,8 @@ static func library() -> MeshLibrary:
 		_library.create_item(item)
 		_library.set_item_name(item, MODELS[item])
 		_library.set_item_mesh(item, meshes[-1])
-	if Engine.is_editor_hint() and Engine.has_singleton("EditorInterface"):
+	# No previews without a window: a headless editor (an export, an import) cannot draw them.
+	if Engine.is_editor_hint() and Engine.has_singleton("EditorInterface") and DisplayServer.get_name() != "headless":
 		# Looked up by name: the EditorInterface class does not exist in exported games.
 		var previews: Array = Engine.get_singleton("EditorInterface").call("make_mesh_previews", meshes, 64)
 		for item in previews.size():

@@ -4,3 +4,6 @@
 # Blender
 *.blend1
 __pycache__/
+
+# Exported builds
+build/

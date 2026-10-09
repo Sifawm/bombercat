@@ -25,6 +25,21 @@ The game is three layers with one-way dependencies (see [ADR 0002](docs/adr/0002
 and `game/control/` (Player controllers that issue commands). Balance values live in
 `game/config/game_config.tres`.
 
+## Exporting
+
+Linux and web builds, without Map Studio or the tests. Needs Godot's export templates for the
+same version (in the editor: Editor > Manage Export Templates).
+
+```sh
+mkdir -p build/linux build/web
+godot --headless --path game --export-release Linux   # build/linux/bombercat.x86_64, one file
+godot --headless --path game --export-release Web     # build/web/, to put on any web server
+python3 -m http.server -d build/web                   # try the web build at http://localhost:8000
+```
+
+The web build is single-threaded, so it needs no special server headers. `build/` is not
+versioned.
+
 ## Map Studio
 
 Maps are GridMap scenes in `game/maps/` (see [ADR 0001](docs/adr/0001-map-studio-in-godot-editor.md)).
