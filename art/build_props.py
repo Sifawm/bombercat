@@ -1,4 +1,4 @@
-"""Builds the stage props in collection "Props": bomb, floor_a, floor_b, wall_pillar,
+"""Builds the props in collection "Props": bomb, floor_a, floor_b, wall_pillar,
 crate, wall_brick. Same recipe as the cats: one mesh each, vertex colours in "Col", shared materials
 (Cat_Fur matte, Cat_Gloss shiny, Prop_Glow emissive). One grid cell = 1 m; blocks sit on z=0,
 floor tiles have their top at z=0. Run inside Blender with cats.blend open:

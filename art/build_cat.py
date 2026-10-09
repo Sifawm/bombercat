@@ -3,8 +3,8 @@ two shared materials (Cat_Fur, Cat_Gloss). Run inside Blender:
 
     exec(open(bpy.path.abspath("//build_cat.py")).read())
 
-Cat faces -Y, feet on z=0, ~1.2 m tall. A breed is a dict of colour functions
-(world position -> linear RGB) per body part; see BREEDS at the bottom.
+Cat faces -Y, feet on z=0, ~1.2 m tall. A Cat's palette is a dict of colour functions
+(world position -> linear RGB) per body part; see CATS at the bottom.
 """
 import bpy, bmesh, math
 from mathutils import Vector, Matrix, Euler
@@ -342,7 +342,7 @@ def animate(rigs):
         _use(ad, acts[0])
 
 
-# ---------------------------------------------------------------- breeds
+# ---------------------------------------------------------------- cats
 V = lambda *c: Vector(c)
 
 # Turing, siamese (seal point): warm tan coat, near-black mask, ears, legs and tail, icy blue eyes
@@ -443,5 +443,5 @@ AQUILES = dict(
     eye_top=V(0.10, 0.27, 0.50), eye_bottom=V(0.52, 0.76, 0.90), collar=V(0.95, 0.45, 0.02),
 )
 
-BREEDS = dict(turing=TURING, berni=BERNI, hami=HAMI, ada=ADA, aquiles=AQUILES)
-animate([build(name, pal, x=i * 1.2) for i, (name, pal) in enumerate(BREEDS.items())])
+CATS = dict(turing=TURING, berni=BERNI, hami=HAMI, ada=ADA, aquiles=AQUILES)
+animate([build(name, pal, x=i * 1.2) for i, (name, pal) in enumerate(CATS.items())])

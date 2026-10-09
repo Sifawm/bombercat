@@ -31,7 +31,7 @@ for rig in [o for o in bpy.data.collections["Cats"].objects if o.type == "ARMATU
         rig.location.x = x
 print("exported", sorted(os.listdir(OUT)), "with", opts)
 
-# static stage props (no skeleton), also exported at the origin
+# static props (no skeleton), also exported at the origin
 for prop in [o for o in bpy.data.collections["Props"].objects if o.type == "MESH"]:
     for o in bpy.context.view_layer.objects:
         o.select_set(False)
