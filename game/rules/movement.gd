@@ -35,7 +35,11 @@ static func move(cat: CatState, board: Board, direction: Vector2i, distance: flo
 				target = lane
 				break
 		if is_nan(target):
-			return NOT_BLOCKED
+			# Stopped by whatever is ahead on the nearest row or column.
+			var obstacle := Vector2i.ZERO
+			obstacle[along] = ahead
+			obstacle[across] = int(lanes[0])
+			return obstacle
 		var slide := minf(distance, absf(target - position[across]))
 		position[across] = move_toward(position[across], target, slide)
 		distance -= slide

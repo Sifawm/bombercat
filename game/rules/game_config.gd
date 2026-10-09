@@ -25,7 +25,7 @@ extends Resource
 
 @export_group("Powerups")
 ## Tiles per second added by each Catnip.
-@export var catnip_speed_bonus: float = 0.75
+@export var catnip_speed_gain: float = 0.75
 ## Seconds a Cat cannot be hurt after Nine Lives absorbs an Explosion.
 @export var nine_lives_invulnerability: float = 1.5
 ## Seconds a Curse lasts.

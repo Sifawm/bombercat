@@ -53,7 +53,8 @@ func _init(map: MapData, game_config: GameConfig, spawn_points: Array[Vector2i],
 				crates.append(Vector2i(x, y))
 	var hidden := PowerupPool.distribute(map.powerup_pool, crates, _random)
 	for tile in hidden:
-		board.hidden_powerups[tile] = Powerup.create(hidden[tile])
+		if Powerup.exists(hidden[tile]):  # Map Studio warns about unknown ids; a Round just leaves them out
+			board.hidden_powerups[tile] = Powerup.create(hidden[tile])
 	time_left = config.round_time
 	for tile in spawn_points:
 		var cat := CatState.new()
@@ -93,8 +94,9 @@ func step(delta: float) -> void:
 			direction = cat.curse.redirect(direction)
 			speed *= cat.curse.speed_factor(config)
 		var blocked := Movement.move(cat, board, direction, speed * delta, config.corner_assist)
-		if cat.paw_swipe and board.bombs.has(blocked):
+		if cat.paw_swipe and board.bombs.has(blocked) and board.bombs[blocked].slide != direction:
 			board.bombs[blocked].slide = direction
+			board.bombs[blocked].slide_progress = 0.0
 		_collect(player)
 		_tick_effects(player, delta)
 	_bomb_requests.fill(false)
@@ -126,6 +128,9 @@ func step(delta: float) -> void:
 			nine_lives_consumed.emit(player)
 		else:
 			cat.alive = false
+			if cat.curse != null:
+				curse_ended.emit(player, cat.curse)
+				cat.curse = null
 			cat_eliminated.emit(player)
 	for tile: Vector2i in board.explosions.keys():
 		board.explosions[tile] -= delta
@@ -183,7 +188,10 @@ func _slide(bomb: Bomb, delta: float) -> void:
 	bomb.slide_progress += config.bomb_slide_speed * delta
 	while bomb.slide != Vector2i.ZERO:
 		var next := bomb.tile + bomb.slide
-		var cat_in_the_way := cats.any(func(cat: CatState) -> bool: return cat.alive and cat.tile() == next)
+		# A Cat is in the way if any part of it is on the Tile, not just its centre.
+		var cat_in_the_way := cats.any(func(cat: CatState) -> bool:
+			var gap := (cat.position - Vector2(next)).abs()
+			return cat.alive and maxf(gap.x, gap.y) < 1.0 - Movement.EPSILON)
 		if not board.is_walkable(next) or cat_in_the_way:
 			bomb.slide = Vector2i.ZERO
 			bomb.slide_progress = 0.0
@@ -230,9 +238,6 @@ func _detonate(first: Bomb) -> void:
 				if kind == MapData.Tile.WALL:
 					break
 				tiles.append(tile)
-				if board.powerups.has(tile):
-					powerup_destroyed.emit(tile, board.powerups[tile])
-					board.powerups.erase(tile)
 				if kind == MapData.Tile.CRATE:
 					if not _doomed_crates.has(tile):
 						_doomed_crates.append(tile)
@@ -242,6 +247,9 @@ func _detonate(first: Bomb) -> void:
 					board.bombs.erase(tile)
 		for tile in tiles:
 			board.explosions[tile] = config.explosion_lifetime
+			if board.powerups.has(tile):
+				powerup_destroyed.emit(tile, board.powerups[tile])
+				board.powerups.erase(tile)
 		bomb_detonated.emit(bomb, tiles)
 
 

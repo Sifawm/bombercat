@@ -138,7 +138,7 @@ func test_range_has_a_maximum() -> void:
 
 func test_catnip_makes_a_cat_faster() -> void:
 	var config := quick_config()
-	config.catnip_speed_bonus = 2.0
+	config.catnip_speed_gain = 2.0
 	var game_round := round_with_just_collected(&"catnip", config)
 	var start := game_round.cats[0].position
 	game_round.set_move(0, LEFT)
@@ -148,7 +148,7 @@ func test_catnip_makes_a_cat_faster() -> void:
 
 func test_cat_speed_has_a_maximum() -> void:
 	var config := quick_config()
-	config.catnip_speed_bonus = 5.0
+	config.catnip_speed_gain = 5.0
 	config.max_cat_speed = 4.5
 	var game_round := round_with_collected(&"catnip", config)
 	check_eq(game_round.cats[0].speed, 4.5, "capped")
@@ -244,3 +244,57 @@ func test_without_paw_swipe_a_bomb_does_not_move() -> void:
 	advance(game_round, 0.4)
 	check_eq(game_round.bombs[0].tile, Vector2i(3, 1), "still where it was placed")
 	check_eq(events_named("bomb_moved").size(), 0, "never moved")
+
+
+func test_paw_swipe_works_when_the_cat_is_slightly_off_the_bombs_row() -> void:
+	var game_round := round_with_collected(&"paw_swipe")
+	walk(game_round, [LEFT])
+	game_round.place_bomb(0)  # on (2, 1)
+	walk(game_round, [LEFT])
+	game_round.set_move(0, DOWN)
+	advance(game_round, 0.075)  # 0.3 Tiles below row 1
+	game_round.set_move(0, RIGHT)
+	advance(game_round, 0.5)
+	check_eq(game_round.bombs[0].tile, Vector2i(5, 1), "pushed all the way to Player 1")
+
+
+func test_a_pushed_bomb_stops_before_a_tile_a_cat_overlaps() -> void:
+	var game_round := round_with_collected(&"paw_swipe")
+	game_round.set_move(1, LEFT)
+	advance(game_round, 0.1)  # Player 1 at x 5.6, overlapping Tiles 5 and 6
+	game_round.set_move(1, Vector2i.ZERO)
+	game_round.place_bomb(0)
+	walk(game_round, [LEFT, RIGHT])
+	advance(game_round, 0.4)
+	check_eq(game_round.bombs[0].tile, Vector2i(4, 1), "stopped short of the Cat's body")
+
+
+func test_an_explosion_destroys_the_powerup_under_its_own_bomb() -> void:
+	# Player 1 is walled in on the right, so a Bomb pushed right stops on (4, 1).
+	var rows: PackedStringArray = ["########", "#S.xx#S#", "#.######", "########"]
+	var game_round: Round
+	for random_seed in 64:
+		events.clear()
+		game_round = make_round(rows, quick_config(), {&"paw_swipe": 1, &"yarn_ball": 1}, random_seed)
+		if game_round.board.hidden_powerups[Vector2i(3, 1)].id == &"paw_swipe":
+			break
+	bomb_from(game_round, Vector2i(2, 1))
+	bomb_from(game_round, Vector2i(3, 1))  # collects Paw Swipe on the way, reveals the Yarn Ball on (4, 1)
+	walk(game_round, [RIGHT])
+	game_round.place_bomb(0)
+	walk(game_round, [LEFT, RIGHT, LEFT, DOWN])  # step back, push the Bomb onto the Yarn Ball, shelter
+	advance(game_round, 0.5)
+	check_eq(events_named("powerup_destroyed"), [["powerup_destroyed", Vector2i(4, 1), &"yarn_ball"]], "destroyed")
+
+
+func test_a_curse_ends_when_its_cat_dies() -> void:
+	var game_round := round_with_curse(&"slowness")
+	game_round.place_bomb(0)
+	advance(game_round, 1.1)
+	check_eq(events_named("cat_eliminated").size(), 1, "died")
+	check_eq(events_named("curse_ended").size(), 1, "the Curse ended with it")
+
+
+func test_an_unknown_powerup_in_the_pool_is_left_out() -> void:
+	var game_round := make_round(ONE_CRATE, quick_config(), {&"laser_pointer": 1})
+	check(game_round.board.hidden_powerups.is_empty(), "nothing hidden")
