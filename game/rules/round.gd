@@ -25,14 +25,17 @@ var finished := false
 
 var _moves: Array[Vector2i] = []
 var _bomb_requests: Array[bool] = []
+## Crates reached by this step's Explosions. They stay on the Board until every Bomb of the
+## step has detonated, so a Chain Reaction still clears a single layer of Crates.
+var _doomed_crates: Array[Vector2i] = []
 
 
-## `spawn_tiles` holds one Spawn Point per Player.
-func _init(map: MapData, game_config: GameConfig, spawn_tiles: Array[Vector2i]) -> void:
+## `spawn_points` holds one Spawn Point per Player.
+func _init(map: MapData, game_config: GameConfig, spawn_points: Array[Vector2i]) -> void:
 	config = game_config
 	board = Board.new(map)
 	time_left = config.round_time
-	for tile in spawn_tiles:
+	for tile in spawn_points:
 		var cat := CatState.new()
 		cat.position = Vector2(tile)
 		cat.speed = config.cat_speed
@@ -46,7 +49,8 @@ func _init(map: MapData, game_config: GameConfig, spawn_tiles: Array[Vector2i]) 
 ## Command: the Player's Cat walks in `direction` (a unit axis vector) until told otherwise;
 ## Vector2i.ZERO stops it.
 func set_move(player: int, direction: Vector2i) -> void:
-	_moves[player] = direction
+	# Reduced to one unit axis step, whatever a controller sends.
+	_moves[player] = Vector2i(signi(direction.x), 0) if direction.x != 0 else Vector2i(0, signi(direction.y))
 
 
 ## Command: the Player's Cat places a Bomb on its Tile at the next step, if it can.
@@ -72,6 +76,10 @@ func step(delta: float) -> void:
 		bomb.fuse_left -= delta
 		if bomb.fuse_left <= 0.0:
 			_detonate(bomb)
+	for tile in _doomed_crates:
+		board.destroy_crate(tile)
+		crate_destroyed.emit(tile)
+	_doomed_crates.clear()
 
 	for player in cats.size():
 		if cats[player].alive and board.explosions.has(cats[player].tile()):
@@ -87,10 +95,12 @@ func step(delta: float) -> void:
 	for player in cats.size():
 		if cats[player].alive:
 			alive.append(player)
-	# ponytail: the Round ends on the step that leaves at most one Cat alive, so only Cats
-	# killed on the same step share a Draw. Add a short grace period if near-misses feel unfair.
-	if alive.size() <= 1:
-		_finish(alive[0] if alive.size() == 1 else DRAW)
+	# With one Cat left the Round waits for the Explosions to burn out: if they kill that Cat
+	# too, both died in the same Explosion and it is a Draw.
+	if alive.is_empty():
+		_finish(DRAW)
+	elif alive.size() == 1 and board.explosions.is_empty():
+		_finish(alive[0])
 	elif time_left <= 0.0:
 		_finish(DRAW)
 
@@ -128,8 +138,8 @@ func _detonate(first: Bomb) -> void:
 					break
 				tiles.append(tile)
 				if kind == MapData.Tile.CRATE:
-					board.destroy_crate(tile)
-					crate_destroyed.emit(tile)
+					if not _doomed_crates.has(tile):
+						_doomed_crates.append(tile)
 					break
 				if board.bombs.has(tile):
 					pending.append(board.bombs[tile])

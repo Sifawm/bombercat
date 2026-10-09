@@ -116,3 +116,25 @@ func test_explosion_is_safe_after_its_lifetime() -> void:
 	game_round.set_move(1, LEFT)
 	advance(game_round, 1.0)
 	check_eq(events_named("cat_eliminated").size(), 0, "the Explosion is over")
+
+
+func test_chain_reaction_still_clears_one_layer_of_crates() -> void:
+	var config := GameConfig.new()
+	config.bomb_capacity = 2
+	var game_round := make_round(["########", "#S.xx.S#", "########"], config)
+	game_round.place_bomb(0)
+	game_round.set_move(0, RIGHT)
+	advance(game_round, 0.25)
+	game_round.place_bomb(0)  # Bombs on (1, 1) and (2, 1); both Explosions reach the Crate on (3, 1)
+	advance(game_round, 2.8)
+	check_eq(events_named("crate_destroyed"), [["crate_destroyed", Vector2i(3, 1)]], "only the first Crate")
+	check_eq(game_round.board.tile_at(Vector2i(4, 1)), MapData.Tile.CRATE, "the Crate behind it survives")
+	check_eq(game_round.cats[0].active_bombs, 0, "Bomb Capacity is free again")
+
+
+func test_wall_stops_an_explosion_within_range() -> void:
+	var game_round := make_round(["########", "#S#...S#", "#.######", "#.######", "########"])
+	game_round.place_bomb(0)
+	advance(game_round, 3.1)
+	var tiles: Array[Vector2i] = events_named("bomb_detonated")[0][2]
+	check(not tiles.has(Vector2i(2, 1)) and not tiles.has(Vector2i(3, 1)), "nothing at or behind the Wall")

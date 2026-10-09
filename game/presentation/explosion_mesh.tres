@@ -1,9 +1,9 @@
 [gd_resource type="BoxMesh" load_steps=2 format=3]
 
-[sub_resource type="StandardMaterial3D" id="fire"]
+[sub_resource type="StandardMaterial3D" id="explosion"]
 shading_mode = 0
 albedo_color = Color(1, 0.62, 0.12, 1)
 
 [resource]
-material = SubResource("fire")
+material = SubResource("explosion")
 size = Vector3(0.9, 0.7, 0.9)

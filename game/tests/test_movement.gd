@@ -100,3 +100,10 @@ func test_bomb_blocks_the_other_cat() -> void:
 	game_round.set_move(1, LEFT)
 	advance(game_round, 1.0)
 	check_position(game_round.cats[1], Vector2(2, 1), "stopped next to the Bomb")
+
+
+func test_a_malformed_direction_cannot_push_a_cat_through_a_wall() -> void:
+	var game_round := make_round(CORRIDOR)
+	game_round.set_move(0, Vector2i(-2, 3))
+	advance(game_round, 0.5)
+	check_position(game_round.cats[0], Vector2(1, 1), "treated as LEFT, into the Wall")

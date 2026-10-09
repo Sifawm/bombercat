@@ -39,6 +39,8 @@ var _controllers: Array[PlayerController] = [LocalPlayerController.new(0), Local
 var _world: Node3D
 var _cat_nodes: Array[Node3D] = []
 var _cat_animations: Array[AnimationPlayer] = []
+## Whether each Cat moved in the last rules step.
+var _cat_moving: Array[bool] = []
 var _bomb_nodes: Dictionary[Bomb, Node3D] = {}
 var _crate_nodes: Dictionary[Vector2i, Node3D] = {}
 
@@ -57,7 +59,12 @@ func _physics_process(delta: float) -> void:
 		return
 	for player in _controllers.size():
 		_controllers[player].drive(_round, player)
+	var before: Array[Vector2] = []
+	for cat in _round.cats:
+		before.append(cat.position)
 	_round.step(delta)
+	for player in _round.cats.size():
+		_cat_moving[player] = _round.cats[player].position != before[player]
 
 
 func _process(_delta: float) -> void:
@@ -76,6 +83,7 @@ func _start_round() -> void:
 	add_child(_world)
 	_cat_nodes.clear()
 	_cat_animations.clear()
+	_cat_moving.clear()
 	_bomb_nodes.clear()
 	_crate_nodes.clear()
 	_result_label.text = ""
@@ -90,16 +98,16 @@ func _start_round() -> void:
 	for y in _map.size.y:
 		for x in _map.size.x:
 			var tile := Vector2i(x, y)
-			_spawn(FLOORS[(x + y) % 2], tile)
+			_place(FLOORS[(x + y) % 2], tile)
 			match _map.tile_at(tile):
 				MapData.Tile.WALL:
 					var on_border := x == 0 or y == 0 or x == _map.size.x - 1 or y == _map.size.y - 1
-					_spawn(WALL_BRICK if on_border else WALL_PILLAR, tile)
+					_place(WALL_BRICK if on_border else WALL_PILLAR, tile)
 				MapData.Tile.CRATE:
-					_crate_nodes[tile] = _spawn(CRATE, tile)
+					_crate_nodes[tile] = _place(CRATE, tile)
 	for player in CATS.size():
 		var scene: PackedScene = CATS[player].scene
-		var node := _spawn(scene, _round.cats[player].tile())
+		var node := _place(scene, _round.cats[player].tile())
 		node.scale = Vector3.ONE * CAT_SCALE
 		var animations: AnimationPlayer = node.find_children("*", "AnimationPlayer", true, false)[0]
 		for looping: String in ["idle", "walk"]:
@@ -107,9 +115,10 @@ func _start_round() -> void:
 		animations.play("idle")
 		_cat_nodes.append(node)
 		_cat_animations.append(animations)
+		_cat_moving.append(false)
 
 
-func _spawn(scene: PackedScene, tile: Vector2i) -> Node3D:
+func _place(scene: PackedScene, tile: Vector2i) -> Node3D:
 	var node: Node3D = scene.instantiate()
 	node.position = _to_world(Vector2(tile))
 	_world.add_child(node)
@@ -142,13 +151,11 @@ func _show_cat(player: int) -> void:
 	var cat := _round.cats[player]
 	var node := _cat_nodes[player]
 	var animations := _cat_animations[player]
-	var target := _to_world(cat.position)
-	var moved := not node.position.is_equal_approx(target)
-	node.position = target
+	node.position = _to_world(cat.position)
 	node.rotation.y = atan2(cat.facing.x, cat.facing.y)  # the models face +Z (south)
 	var busy := animations.is_playing() and animations.current_animation in ["place_bomb", "die"]
-	if cat.alive and not busy:
-		animations.play("walk" if moved else "idle")
+	if cat.alive and not busy and not _round.finished:
+		animations.play("walk" if _cat_moving[player] else "idle")
 
 
 ## Scale factor of a Bomb: a throb whose rate depends only on the Fuse left, from 1.5 beats
@@ -160,7 +167,7 @@ func _bomb_pulse(bomb: Bomb) -> float:
 
 
 func _on_bomb_placed(bomb: Bomb) -> void:
-	_bomb_nodes[bomb] = _spawn(BOMB, bomb.tile)
+	_bomb_nodes[bomb] = _place(BOMB, bomb.tile)
 	_cat_animations[bomb.owner].play("place_bomb")
 
 
@@ -168,16 +175,16 @@ func _on_bomb_detonated(bomb: Bomb, tiles: Array[Vector2i]) -> void:
 	_bomb_nodes[bomb].queue_free()
 	_bomb_nodes.erase(bomb)
 	for tile in tiles:
-		var fire := MeshInstance3D.new()
-		fire.mesh = preload("res://presentation/explosion_mesh.tres")
-		fire.position = _to_world(Vector2(tile)) + Vector3(0.0, 0.35, 0.0)
-		fire.scale = Vector3.ONE * 0.3
-		_world.add_child(fire)
-		var tween := fire.create_tween()
-		tween.tween_property(fire, "scale", Vector3.ONE, 0.08)
+		var explosion := MeshInstance3D.new()
+		explosion.mesh = preload("res://presentation/explosion_mesh.tres")
+		explosion.position = _to_world(Vector2(tile)) + Vector3(0.0, 0.35, 0.0)
+		explosion.scale = Vector3.ONE * 0.3
+		_world.add_child(explosion)
+		var tween := explosion.create_tween()
+		tween.tween_property(explosion, "scale", Vector3.ONE, 0.08)
 		tween.tween_interval(config.explosion_lifetime - 0.16)
-		tween.tween_property(fire, "scale", Vector3.ZERO, 0.08)
-		tween.tween_callback(fire.queue_free)
+		tween.tween_property(explosion, "scale", Vector3.ZERO, 0.08)
+		tween.tween_callback(explosion.queue_free)
 
 
 func _on_crate_destroyed(tile: Vector2i) -> void:
@@ -192,6 +199,9 @@ func _on_cat_eliminated(player: int) -> void:
 func _on_round_ended(winner: int) -> void:
 	if winner == Round.DRAW:
 		_result_label.text = "Draw!"
+		for player in _round.cats.size():
+			if _round.cats[player].alive:
+				_cat_animations[player].play("idle")
 	else:
 		_result_label.text = "%s wins!" % CATS[winner].name
 		_cat_animations[winner].get_animation("win").loop_mode = Animation.LOOP_LINEAR
