@@ -1,8 +1,8 @@
 """Animation showcase: the five cats in a row, each looping a different animation, with labels.
 Builds its own scene "Anim" (linked copies of the rigs) and renders PNG frames to FRAMES;
-encode them afterwards with ffmpeg. Run inside Blender with gatos.blend open:
+encode them afterwards with ffmpeg. Run inside Blender with cats.blend open:
 
-    exec(open("/home/sifaw/Workspaces/bombercat/models/render_anim.py").read())
+    exec(open(bpy.path.abspath("//render_anim.py")).read())
 """
 import bpy, math
 from mathutils import Vector
@@ -10,8 +10,8 @@ from mathutils import Vector
 FRAMES = globals().get("FRAMES", "/tmp/anim_frames/f_")
 LENGTH = 96  # 4 s at 24 fps; every strip layout below repeats cleanly within it
 # cat, animation, strip start frames, repeats per strip
-SHOW = [("Siames", "idle", [0], 2), ("Tuxedo", "walk", [0], 6), ("Atigrado", "place_bomb", [0, 24, 48, 72], 1),
-        ("Tricolor", "die", [0, 48], 1), ("Callejero", "win", [0], 4)]
+SHOW = [("turing", "idle", [0], 2), ("berni", "walk", [0], 6), ("aquiles", "place_bomb", [0, 24, 48, 72], 1),
+        ("hami", "die", [0, 48], 1), ("ada", "win", [0], 4)]
 
 old = bpy.data.scenes.get("Anim")
 if old:

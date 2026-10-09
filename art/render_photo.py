@@ -1,8 +1,8 @@
 """Photoreal render: the five cats as furry plush toys in a studio, Cycles.
-Builds its own scene "Foto" (cats are mesh COPIES with particle fur, originals
-untouched) and writes renders/foto.png. Run inside Blender with gatos.blend open:
+Builds its own scene "Photo" (cats are mesh COPIES with particle fur, originals
+untouched) and writes renders/photo.png. Run inside Blender with cats.blend open:
 
-    exec(open("/home/sifaw/Workspaces/bombercat/models/render_foto.py").read())
+    exec(open(bpy.path.abspath("//render_photo.py")).read())
 
 Set PREVIEW = True before exec for a fast half-res test.
 """
@@ -10,18 +10,18 @@ import bpy, bmesh, math
 from mathutils import Vector
 
 PREVIEW = globals().get("PREVIEW", False)
-OUT = "/home/sifaw/Workspaces/bombercat/renders/foto.png"
+OUT = bpy.path.abspath("//../renders/photo.png")
 # name, x, y, rotation towards the camera (degrees)
-CATS = [("Siames", -1.84, -0.2, 14), ("Tuxedo", -0.92, -0.05, 7), ("Atigrado", 0, 0.05, 0),
-        ("Tricolor", 0.92, -0.05, -7), ("Callejero", 1.84, -0.2, -14)]
+CATS = [("turing", -1.84, -0.2, 14), ("berni", -0.92, -0.05, 7), ("aquiles", 0, 0.05, 0),
+        ("hami", 0.92, -0.05, -7), ("ada", 1.84, -0.2, -14)]
 COLLARS = [Vector(c) for c in ((0.8, 0.04, 0.04), (0.03, 0.2, 0.85), (0.05, 0.55, 0.12), (0.45, 0.08, 0.7), (0.95, 0.45, 0.02))]
 
-old = bpy.data.scenes.get("Foto")
+old = bpy.data.scenes.get("Photo")
 if old:
     for o in list(old.collection.all_objects):
         bpy.data.objects.remove(o, do_unlink=True)
     bpy.data.scenes.remove(old)
-sc = bpy.data.scenes.new("Foto")
+sc = bpy.data.scenes.new("Photo")
 try:
     sc.render.engine = "CYCLES"
 except TypeError as e:
@@ -185,5 +185,5 @@ sc.collection.objects.link(cam)
 sc.camera = cam
 
 sc.render.filepath = OUT.replace(".png", "_preview.png") if PREVIEW else OUT
-bpy.ops.render.render(write_still=True, scene="Foto")
+bpy.ops.render.render(write_still=True, scene="Photo")
 print("rendered", sc.render.filepath)

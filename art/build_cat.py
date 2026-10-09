@@ -1,7 +1,7 @@
 """Builds the chibi cats, each as ONE mesh with vertex colours (attribute "Col") and
 two shared materials (Cat_Fur, Cat_Gloss). Run inside Blender:
 
-    exec(open("/home/sifaw/Workspaces/bombercat/models/build_cat.py").read())
+    exec(open(bpy.path.abspath("//build_cat.py")).read())
 
 Cat faces -Y, feet on z=0, ~1.2 m tall. A breed is a dict of colour functions
 (world position -> linear RGB) per body part; see BREEDS at the bottom.
@@ -83,7 +83,7 @@ def blaze(top, brow=0.075, jaw=0.32):
 CHIN = (0.012, -0.30, 0.59)  # small dark mark under the mouth
 
 
-def build(name, pal, x=0.0, collection="Gatos"):
+def build(name, pal, x=0.0, collection="Cats"):
     bm = bmesh.new()
     col = bm.verts.layers.float_color.new("Col")
     dl = bm.verts.layers.deform.verify()
@@ -345,7 +345,7 @@ def animate(rigs):
 # ---------------------------------------------------------------- breeds
 V = lambda *c: Vector(c)
 
-# Siamese (seal point): warm tan coat, near-black mask, ears, legs and tail, icy blue eyes
+# Turing, siamese (seal point): warm tan coat, near-black mask, ears, legs and tail, icy blue eyes
 CREAM, POINT = V(0.45, 0.27, 0.15), V(0.03, 0.018, 0.014)
 _face = V(0, -0.36, 0.73)
 
@@ -355,7 +355,7 @@ def _siam_head(p):
     return CREAM.lerp(POINT, sstep(0.40, 0.22, d))  # colours are linear: mid-blend reads pale, keep it steep
 
 
-SIAMES = dict(
+TURING = dict(
     body=lambda p: CREAM.lerp(V(0.64, 0.45, 0.29), sstep(0.26, 0.08, (p - V(0, -0.21, 0.28)).length)),
     head=_siam_head, ear=zfade(CREAM, POINT, 0.78, 0.92), ear_in=V(0.22, 0.09, 0.08), muzzle=flat(V(0.06, 0.035, 0.026)), nose=POINT,
     arm=zfade(POINT, CREAM, 0.33, 0.40), foot=zfade(POINT, CREAM, 0.10, 0.16),
@@ -363,11 +363,11 @@ SIAMES = dict(
     eye_top=V(0.10, 0.36, 0.85), eye_bottom=V(0.60, 0.88, 1.0), collar=V(0.8, 0.04, 0.04),
 )
 
-# Tuxedo: black with a white blaze from between the eyes down to muzzle, jaw and bib,
+# Berni, tuxedo: black with a white blaze from between the eyes down to muzzle, jaw and bib,
 # long white gloves, white socks and tail tip, dark ears, a black chin mark, sage-green eyes
 TBLK, TWHT = V(0.012, 0.012, 0.016), V(0.93, 0.93, 0.91)
 _tux_blaze = blaze(0.90, brow=0.08)
-TUXEDO = dict(
+BERNI = dict(
     body=patches(TBLK, ((0, -0.22, 0.31), 0.24, TWHT)),
     head=patches(lambda p: TBLK.lerp(TWHT, _tux_blaze(p)), (CHIN, 0.04, TBLK)),
     ear=flat(TBLK), ear_in=V(0.07, 0.04, 0.045), muzzle=flat(TWHT),
@@ -376,14 +376,14 @@ TUXEDO = dict(
     eye_top=V(0.10, 0.26, 0.05), eye_bottom=V(0.62, 0.80, 0.30), collar=V(0.03, 0.2, 0.85),
 )
 
-# Tricolor (calico): white face blaze, chest and legs; black mask over the cat's left eye and ear,
+# Hami, calico: white face blaze, chest and legs; black mask over the cat's left eye and ear,
 # orange temple and crown on its right; orange saddle between black shoulders and rump
 ORANGE, CBLK, CWHT = V(0.8, 0.28, 0.04), V(0.02, 0.018, 0.016), V(0.95, 0.94, 0.9)
 PEACH = V(0.9, 0.55, 0.28)
 _cal_blaze = blaze(0.95, brow=0.085)
 _cal_mask = patches(CBLK, ((-0.43, -0.06, 0.78), 0.20, ORANGE), ((-0.12, -0.12, 1.08), 0.17, ORANGE), ((0.20, 0.26, 0.86), 0.19, ORANGE))
 _cal_back = patches(ORANGE, ((0.08, 0.10, 0.52), 0.20, CBLK), ((-0.04, 0.20, 0.10), 0.19, CBLK))
-TRICOLOR = dict(
+HAMI = dict(
     body=lambda p: CWHT.lerp(_cal_back(p), sstep(-0.02, 0.04, p.y + 0.35 * p.x)),  # colour wraps forward on its left flank
     head=patches(lambda p: _cal_mask(p).lerp(CWHT, _cal_blaze(p)), (CHIN, 0.035, CBLK)),
     ear=by_side(ORANGE, CBLK), muzzle=patches(CWHT, ((0.085, -0.36, 0.665), 0.035, PEACH)),
@@ -392,7 +392,7 @@ TRICOLOR = dict(
     eye_top=V(0.10, 0.42, 0.10), eye_bottom=V(0.60, 0.95, 0.42), collar=V(0.05, 0.55, 0.12),
 )
 
-# Callejero: white with a chocolate mask and ears, white streaks on the forehead, a black
+# Ada Lovelace: white with a chocolate mask and ears, white streaks on the forehead, a black
 # smudge down the nose, marbled taupe and apricot back, blue eyes
 BROWN, SOOT, TAUPE, APRICOT, SWHT = V(0.10, 0.055, 0.04), V(0.012, 0.01, 0.01), V(0.26, 0.20, 0.17), V(0.85, 0.52, 0.32), V(0.95, 0.95, 0.95)
 _str_jaw = blaze(0.90, brow=0)
@@ -407,7 +407,7 @@ def _str_body(p):
     return SWHT.lerp(_str_warm(p).lerp(TAUPE, _str_band(p)), sstep(0.0, 0.10, p.y + 1.5 * abs(p.x) - 0.06))
 
 
-CALLEJERO = dict(
+ADA = dict(
     body=_str_body,
     head=patches(lambda p: BROWN.lerp(SWHT, _str_jaw(p)), ((-0.03, -0.34, 0.80), 0.035, SWHT), ((-0.045, -0.33, 0.86), 0.045, SWHT),
                  ((-0.06, -0.31, 0.92), 0.04, SWHT), ((0.08, -0.30, 0.94), 0.045, SWHT), ((0.008, -0.35, 0.745), 0.065, SOOT)),
@@ -417,7 +417,7 @@ CALLEJERO = dict(
     eye_top=V(0.04, 0.30, 0.62), eye_bottom=V(0.40, 0.80, 0.95), collar=V(0.45, 0.08, 0.7),
 )
 
-# Atigrado: taupe-grey tabby with dark stripes; white blaze, muzzle, bib and toes; ringed
+# Aquiles: taupe-grey tabby with dark stripes; white blaze, muzzle, bib and toes; ringed
 # dark-tipped tail; pale blue eyes
 TGREY, TDARK, TLIGHT = V(0.30, 0.24, 0.19), V(0.04, 0.034, 0.03), V(0.93, 0.92, 0.89)
 _stripe = lambda phase: sstep(0.15, 0.55, math.sin(phase))
@@ -435,7 +435,7 @@ def _tabby_head(p):
     return TGREY.lerp(TDARK, max(brow, cheek)).lerp(TLIGHT, _tab_blaze(p))
 
 
-ATIGRADO = dict(
+AQUILES = dict(
     body=_tabby_body, head=_tabby_head, ear=zfade(TGREY, TDARK, 0.95, 1.15), muzzle=flat(TLIGHT),
     arm=lambda p: TGREY.lerp(TDARK, _stripe(p.z * 60)).lerp(TLIGHT, sstep(0.345, 0.325, p.z)),
     foot=lambda p: TGREY.lerp(TLIGHT, sstep(-0.05, -0.09, p.y)),
@@ -443,5 +443,5 @@ ATIGRADO = dict(
     eye_top=V(0.10, 0.27, 0.50), eye_bottom=V(0.52, 0.76, 0.90), collar=V(0.95, 0.45, 0.02),
 )
 
-BREEDS = dict(Siames=SIAMES, Tuxedo=TUXEDO, Tricolor=TRICOLOR, Callejero=CALLEJERO, Atigrado=ATIGRADO)
+BREEDS = dict(turing=TURING, berni=BERNI, hami=HAMI, ada=ADA, aquiles=AQUILES)
 animate([build(name, pal, x=i * 1.2) for i, (name, pal) in enumerate(BREEDS.items())])

@@ -1,9 +1,9 @@
-"""Builds the stage props in collection "Escenario": Bomba, Suelo_A, Suelo_B, Bloque_Solido,
-Caja, Muro. Same recipe as the cats: one mesh each, vertex colours in "Col", shared materials
+"""Builds the stage props in collection "Props": bomb, floor_a, floor_b, wall_pillar,
+crate, wall_brick. Same recipe as the cats: one mesh each, vertex colours in "Col", shared materials
 (Cat_Fur matte, Cat_Gloss shiny, Prop_Glow emissive). One grid cell = 1 m; blocks sit on z=0,
-floor tiles have their top at z=0. Run inside Blender with gatos.blend open:
+floor tiles have their top at z=0. Run inside Blender with cats.blend open:
 
-    exec(open("/home/sifaw/Workspaces/bombercat/models/build_props.py").read())
+    exec(open(bpy.path.abspath("//build_props.py")).read())
 """
 import bpy, bmesh, math
 from mathutils import Vector, Matrix, Quaternion
@@ -93,7 +93,7 @@ class Prop:
                     bm.faces.new((A[k], A[(k + 1) % n], B[(k + 1) % n], B[k]))
         self.part(make, colour, smooth=True)
 
-    def finish(self, name, x, collection="Escenario"):
+    def finish(self, name, x, collection="Props"):
         col = bpy.data.collections.get(collection) or bpy.data.collections.new(collection)
         if col.name not in bpy.context.scene.collection.children:
             bpy.context.scene.collection.children.link(col)
@@ -112,7 +112,7 @@ class Prop:
 
 
 # ---------------------------------------------------------------- bomb: a round black cat
-def bomba():
+def bomb():
     p = Prop()
     C, R = V(0, 0, 0.34), 0.34
     BLK, PINK, YEL = V(0.025, 0.025, 0.04), V(0.9, 0.42, 0.48), V(1.0, 0.75, 0.05)
@@ -141,7 +141,7 @@ def bomba():
 
 
 # ---------------------------------------------------------------- floor: grass slab on soil
-def suelo(grass):
+def floor(grass):
     p = Prop()
     soil = V(0.33, 0.21, 0.11)
     p.box((1, 1, 0.12), (0, 0, -0.06), lambda c: grass if c.z > -0.04 else soil, bevel=0.015)
@@ -149,7 +149,7 @@ def suelo(grass):
 
 
 # ---------------------------------------------------------------- indestructible: stone with a paw on top
-def bloque_solido():
+def wall_pillar():
     p = Prop()
     p.box((0.98, 0.98, 0.48), (0, 0, 0.24), V(0.30, 0.33, 0.43), bevel=0.05)
     p.box((0.86, 0.86, 0.12), (0, 0, 0.52), V(0.50, 0.54, 0.65), bevel=0.035)
@@ -158,7 +158,7 @@ def bloque_solido():
 
 
 # ---------------------------------------------------------------- destructible: taped cardboard box
-def caja():
+def crate():
     p = Prop()
     card, tape, ink = V(0.62, 0.43, 0.24), V(0.86, 0.76, 0.55), V(0.36, 0.23, 0.12)
     p.box((0.84, 0.84, 0.60), (0, 0, 0.30), card, bevel=0.025)
@@ -171,7 +171,7 @@ def caja():
 
 
 # ---------------------------------------------------------------- border wall: two courses of brick
-def muro():
+def wall_brick():
     p = Prop()
     p.box((0.94, 0.94, 0.56), (0, 0, 0.28), V(0.72, 0.68, 0.60), bevel=0)  # mortar core
     a, b = V(0.55, 0.21, 0.13), V(0.64, 0.28, 0.16)
@@ -182,7 +182,7 @@ def muro():
     return p
 
 
-PROPS = [("Bomba", bomba()), ("Suelo_A", suelo(V(0.36, 0.62, 0.22))), ("Suelo_B", suelo(V(0.27, 0.52, 0.17))),
-         ("Bloque_Solido", bloque_solido()), ("Caja", caja()), ("Muro", muro())]
+PROPS = [("bomb", bomb()), ("floor_a", floor(V(0.36, 0.62, 0.22))), ("floor_b", floor(V(0.27, 0.52, 0.17))),
+         ("wall_pillar", wall_pillar()), ("crate", crate()), ("wall_brick", wall_brick())]
 for i, (name, prop) in enumerate(PROPS):
     prop.finish(name, i * 1.5)
