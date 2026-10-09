@@ -8,7 +8,7 @@ and [docs/spec-v1.md](docs/spec-v1.md) for what v1 is.
 | Folder | Contents |
 |---|---|
 | `game/` | The Godot 4.7 project. Open `game/project.godot`. Models live in `game/assets/models/`. |
-| `art/` | Blender sources: `cats.blend` and the Python scripts that generate every model, and the script that synthesises the audio. |
+| `art/` | Blender sources: `cats.blend` and the Python scripts that generate every model, and the script that imports the audio. |
 | `renders/` | Reference renders produced by the `art/render_*.py` scripts. |
 | `docs/` | Spec, scope, Powerup catalogue, audio credits and ADRs. |
 
@@ -52,11 +52,13 @@ godot --headless --path game --import            # re-imports them
 To change a model, edit `art/build_cat.py` or `art/build_props.py`, run it inside Blender with
 `cats.blend` open (see each script's docstring), save, then export as above.
 
-## Regenerating audio
+## Importing audio
 
-Every sound and music loop is synthesised (see [docs/credits.md](docs/credits.md)):
+Every sound and music loop is a CC0 file from Kenney or OpenGameArt (see
+[docs/credits.md](docs/credits.md)). To change one, edit the table in `art/import_audio.py`
+and the matching row of the credits, then:
 
 ```sh
-python3 art/build_audio.py                       # writes game/assets/audio/*.wav (needs numpy)
+python3 art/import_audio.py                      # downloads and writes game/assets/audio/*.ogg (needs ffmpeg)
 godot --headless --path game --import            # re-imports them
 ```

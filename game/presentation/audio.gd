@@ -25,13 +25,13 @@ func _input(event: InputEvent) -> void:
 
 
 func has(sound: StringName) -> bool:
-	return ResourceLoader.exists(FOLDER + sound + ".wav")
+	return ResourceLoader.exists(FOLDER + sound + ".ogg")
 
 
 ## Plays the effect in assets/audio named `sound`.
 func play(sound: StringName, pitch: float = 1.0) -> void:
 	var voice := AudioStreamPlayer.new()
-	voice.stream = load(FOLDER + sound + ".wav")
+	voice.stream = load(FOLDER + sound + ".ogg")
 	voice.bus = &"Effects"
 	voice.pitch_scale = pitch
 	voice.finished.connect(voice.queue_free)
@@ -46,8 +46,7 @@ func play_music(music: StringName, speed: float = 1.0) -> void:
 	if music == _music_name:
 		return
 	_music_name = music
-	var stream: AudioStreamWAV = load(FOLDER + music + ".wav")
-	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
-	stream.loop_end = int(stream.get_length() * stream.mix_rate)
+	var stream: AudioStreamOggVorbis = load(FOLDER + music + ".ogg")
+	stream.loop = true
 	_music.stream = stream
 	_music.play()
