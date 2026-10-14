@@ -1,0 +1,18 @@
+{
+  "catSpeed": 4.0,
+  "cornerAssist": 0.7,
+  "bombCapacity": 1,
+  "bombRange": 2,
+  "maxBombCapacity": 8,
+  "maxBombRange": 8,
+  "maxCatSpeed": 7.0,
+  "fuse": 3.0,
+  "explosionLifetime": 0.5,
+  "bombSlideSpeed": 8.0,
+  "catnipSpeedGain": 0.75,
+  "nineLivesInvulnerability": 1.5,
+  "curseDuration": 10.0,
+  "slownessFactor": 0.5,
+  "roundTime": 120.0,
+  "roundsToWin": 2
+}

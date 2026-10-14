@@ -1,0 +1,23 @@
+{
+  "rows": [
+    "#############",
+    "#S..xxxxx..S#",
+    "#.#x#x#x#x#.#",
+    "#xxxxxxxxxxx#",
+    "#x#x#x#x#x#x#",
+    "#xxxx...xxxx#",
+    "#x#x#x#x#x#x#",
+    "#xxxxxxxxxxx#",
+    "#.#x#x#x#x#.#",
+    "#S..xxxxx..S#",
+    "#############"
+  ],
+  "powerupPool": {
+    "catnip": 4,
+    "cucumber": 2,
+    "nine_lives": 1,
+    "paw_swipe": 2,
+    "tuna_can": 6,
+    "yarn_ball": 6
+  }
+}

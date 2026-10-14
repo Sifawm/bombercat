@@ -11,16 +11,16 @@ and [docs/spec-v1.md](docs/spec-v1.md) for what v1 is.
 | `art/` | Blender sources: `cats.blend` and the Python scripts that generate every model, and the script that imports the audio. |
 | `renders/` | Reference renders produced by the `art/render_*.py` scripts. |
 | `docs/` | Spec, scope, Powerup catalogue, audio credits and ADRs. |
-| `server/` | The online server: NestJS with [Porter](https://github.com/Sifawm/porterkit) and the Game's Managers. |
+| `server/` | The online server: NestJS with [Porter](https://github.com/Sifawm/porterkit), the Game's Managers and, in `src/rules/`, the rules in TypeScript. |
 | `web/` | The page of the web build: it creates Porter's client and starts the engine. |
-| `shared/` | What server and page share: the Game definitions and the Profile. |
+| `shared/` | What server and page share: the Game definitions, the Profile, and the Maps and balance values exported from `game/`. |
 
 ## Playing and testing
 
 ```sh
 godot --path game        # play: Player 1 WASD + Space, Player 2 arrows + Enter, or a gamepad each;
                          # Q / Right Shift / X to meow, Esc or Start to pause, F11 fullscreen
-game/run_tests.sh        # rules-layer tests, headless
+game/run_tests.sh        # rules-layer tests, headless; also exports shared/src and fails if it was stale
 ```
 
 The game is three layers with one-way dependencies (see [ADR 0002](docs/adr/0002-rules-layer-owns-movement.md)):
@@ -32,7 +32,7 @@ and `game/control/` (Player controllers that issue commands). Balance values liv
 
 Online play exists only in the web build ([ADR 0005](docs/adr/0005-online-is-web-only.md)) and its
 rules run on the server ([ADR 0003](docs/adr/0003-online-rules-run-on-the-server.md)). So far there
-is the Room and no Match: entering with a name and a Cat, the invite link, and the Admin locking the
+is the Room and, on the server, the rules; no Match is played yet: entering with a name and a Cat, the invite link, and the Admin locking the
 Room and removing Users.
 
 Needs Node 24, pnpm and, until Porter is published, its repository built next to this one at
@@ -45,6 +45,12 @@ pnpm server       # Porter on :3000
 pnpm web          # the page on http://localhost:5173, which forwards /porter to the server
 pnpm test         # the server's tests
 ```
+
+The server has its own rules, a port to TypeScript of `game/rules/` as it was at v1, with the same
+tests (`server/src/rules/`). The two are allowed to drift, movement excepted
+([ADR 0004](docs/adr/0004-own-cat-is-predicted-with-movement-parity.md)). Maps and balance values
+have one source, the Godot project: `game/tools/export_shared.gd` writes them as JSON into
+`shared/src/`, and those files are versioned.
 
 `game/addons/porter` is a copy of Porter's addon for Godot; `pnpm addon` refreshes it. The Admin's
 "Bridge Probe" button in a Room is a measuring tool, not part of the game: it sends a snapshot the
