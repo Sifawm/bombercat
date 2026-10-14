@@ -3,6 +3,7 @@ extends Control
 ## The first screen: the game's name, the five Cats and the way into a Match.
 
 signal play_pressed
+signal online_pressed
 
 var _play: Button
 var _how_to_play: Button
@@ -20,9 +21,11 @@ func _init() -> void:
 	column.add_child(cats)
 	var menu := VBoxContainer.new()
 	menu.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	_play = Ui.button("Play", play_pressed.emit)
+	_play = Ui.button("Play" if Online.porter == null else "Play Local", play_pressed.emit)
 	_how_to_play = Ui.button("How to Play", _show_how_to_play)
 	menu.add_child(_play)
+	if Online.porter != null:
+		menu.add_child(Ui.button("Play Online", online_pressed.emit))
 	menu.add_child(_how_to_play)
 	if not OS.has_feature("web"):  # a browser tab is closed, not quit
 		menu.add_child(Ui.button("Quit", func() -> void: get_tree().quit()))

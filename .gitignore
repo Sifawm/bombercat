@@ -7,3 +7,9 @@ __pycache__/
 
 # Exported builds
 build/
+
+# Node
+node_modules/
+dist/
+out-tsc/
+web/public/godot/

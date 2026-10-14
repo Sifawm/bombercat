@@ -1,0 +1,6 @@
+packages:
+  - shared
+  - server
+  - web
+allowBuilds:
+  '@swc/core': true

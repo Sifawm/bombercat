@@ -1,0 +1,22 @@
+{
+  "name": "@bombercat/server",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/main.js",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@bombercat/shared": "workspace:*",
+    "@nestjs/common": "link:../../porter/packages/nestjs/node_modules/@nestjs/common",
+    "@nestjs/core": "link:../../porter/packages/nestjs/node_modules/@nestjs/core",
+    "@nestjs/platform-fastify": "link:../../porter/packages/nestjs/node_modules/@nestjs/platform-fastify",
+    "@nestjs/platform-ws": "link:../../porter/packages/nestjs/node_modules/@nestjs/platform-ws",
+    "@nestjs/websockets": "link:../../porter/packages/nestjs/node_modules/@nestjs/websockets",
+    "@porterkit/nestjs": "link:../../porter/packages/nestjs",
+    "reflect-metadata": "link:../../porter/packages/nestjs/node_modules/reflect-metadata"
+  },
+  "devDependencies": {
+    "@porterkit/client": "link:../../porter/packages/client"
+  }
+}

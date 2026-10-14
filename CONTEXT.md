@@ -114,8 +114,8 @@ _Avoid_: Disease, debuff
 ### Cats
 
 **Player**:
-A participant in a Match who controls one Cat. Today always a human on the local machine; later also an AI or a remote human.
-_Avoid_: User, gamer
+A participant in a Match who controls one Cat: a human on the local machine or, online, a User. Later also an AI.
+_Avoid_: Gamer; User for someone who is playing
 
 **Cat**:
 A selectable playable character. Cats differ only in appearance.
@@ -136,3 +136,39 @@ The calico (tricolor) Cat.
 **Ada Lovelace**:
 The white Cat with a chocolate mask (the "stray" model).
 _Avoid_: Callejero
+
+### Online
+
+Online play is built on Porter. These words mean what Porter's own glossary says; what is written
+here is what they are in BomberCat.
+
+**Game**:
+What Porter runs in a Room. BomberCat is one Game; its rules on the server are its Manager.
+_Avoid_: Game for a single Match
+
+**Room**:
+Where Users meet to play Matches online, one Match at a time. It is reached by a link that carries its id.
+_Avoid_: Lobby, server, party
+
+**User**:
+A named participant in one Room. Every online Player is a User, but a User who joined with a Match under way is not a Player of that Match: it watches until the next one.
+_Avoid_: Player (for someone who is only in the Room), account, spectator
+
+**Profile**:
+What a User brings into the Room besides its name: the Cat it plays. It is chosen before joining and cannot change inside the Room; two Users may bring the same Cat.
+
+**Admin**:
+The one User of a Room who starts and ends its Matches, changes their settings, removes Users and locks the Room.
+_Avoid_: Host, owner
+
+**Grace period**:
+The time a User may stay in a Room without a connection. Its Cat stands still meanwhile and dies when the time runs out.
+_Avoid_: Timeout, reconnect window
+
+**Tick**:
+One advance of an online Match by a fixed length of time, made by the server.
+_Avoid_: Frame, step (for the server's advance)
+
+**Prediction**:
+A client moving its own Cat before the server confirms it, and correcting the Cat when the server answers.
+_Avoid_: Lag compensation, rollback

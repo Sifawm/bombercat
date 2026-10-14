@@ -1,0 +1,14 @@
+{
+  "name": "@bombercat/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "vite"
+  },
+  "dependencies": {
+    "@bombercat/shared": "workspace:*",
+    "@porterkit/client": "link:../../porter/packages/client",
+    "@porterkit/godot": "link:../../porter/packages/godot"
+  }
+}
