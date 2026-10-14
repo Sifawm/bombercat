@@ -12,6 +12,8 @@ var _names: PackedStringArray
 var _listeners: Array[int] = []
 ## The frame the Round on screen was built in: the server's word for it may come twice.
 var _built_on := -1
+## What this User should know about where it stands: watching, or cut off.
+var _standing := Ui.label("", Ui.SMALL_SIZE, Color(1.0, 0.8, 0.3))
 
 
 ## The Match of the Room as it is, and the Map it is played on.
@@ -40,9 +42,16 @@ func _ready() -> void:
 		porter.on("meowed", _on_meowed),
 	]
 	porter.game_changed.connect(_show_pause)
+	porter.room_changed.connect(_show_presence.unbind(1))
+	porter.connection_changed.connect(_show_presence.unbind(1))
 	_pause_menu.closes_itself = false
 	_pause_menu.name_quit("Leave the Room")
 	_pause_menu.resume_pressed.connect(_request_pause)
+	if porter.room.isAdmin:
+		_pause_menu.add_action("End the Match", porter.send.bind("porter:endMatch"))
+	_standing.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 24)
+	_standing.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	$Hud.add_child(_standing)
 	super()
 	_show_pause(porter.game)
 
@@ -131,6 +140,22 @@ func _start_round() -> void:
 		_cat_views[player].visible = _round.cats[player].alive
 	_remote().predicted = _own
 	_remote().announce()
+	_show_presence()
+
+
+## Names each Cat after its Player, and says so when that Player's User is away or gone.
+func _show_presence() -> void:
+	var room: Variant = Online.porter.room
+	if room == null or _cat_views.is_empty():
+		return
+	for player in _cat_views.size():
+		var users: Array = (room.users as Array).filter(func(user: Dictionary) -> bool: return user.name == _names[player])
+		var presence := " (left)" if users.is_empty() else " (away)" if users[0].status == "reconnecting" else ""
+		_cat_views[player].show_name(_names[player] + presence, Roster.PLAYER_COLORS[player])
+	if Online.porter.connection.status == "reconnecting":
+		_standing.text = "Reconnecting..."
+	else:
+		_standing.text = "You are watching: you play in the next Match" if _own == -1 else ""
 
 
 ## The server starts the next Round, and ends the Match, when it is time.

@@ -19,6 +19,7 @@ var _curse_tint := Effects.flat_material(Color(0.2, 0.9, 0.2, 0.4))
 var _spiral := MeshInstance3D.new()
 var _trail := Effects.cubes(Color(0.5, 1.0, 0.4), 14, 0.35, 0.12)
 var _bubble := Label3D.new()
+var _name_tag: Label3D
 var _bubble_timer: Tween
 
 
@@ -80,6 +81,22 @@ func show_state(cat: CatState, moving: bool, fast: bool, resting: bool) -> void:
 	for mesh in _meshes:
 		mesh.material_overlay = _curse_tint if cat.curse != null else null
 	_trail.emitting = cat.alive and moving and fast
+
+
+## Writes who plays this Cat over its head, where two Cats may look alike.
+func show_name(text: String, color: Color) -> void:
+	if _name_tag == null:
+		_name_tag = Label3D.new()
+		_name_tag.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		_name_tag.no_depth_test = true
+		_name_tag.font_size = 64
+		_name_tag.outline_size = 24
+		_name_tag.pixel_size = 0.004
+		_name_tag.position.y = 1.3
+		_bubble.position.y += 0.35  # the meow goes above the name
+		add_child(_name_tag)
+	_name_tag.text = text
+	_name_tag.modulate = color
 
 
 func play(animation: String) -> void:

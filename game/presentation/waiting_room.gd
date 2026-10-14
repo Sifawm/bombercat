@@ -3,6 +3,13 @@ extends Control
 ## The Room between Matches: who is in it, the link that invites to it, and what the Admin
 ## may do to it. Built again after every change of the Room.
 
+## The limits of the settings, which the server enforces: see `isSettings` in shared/.
+const MIN_ROUNDS := 1
+const MAX_ROUNDS := 5
+const MIN_TIME := 30
+const MAX_TIME := 300
+const TIME_STEP := 30
+
 const REJECTIONS: Dictionary[String, String] = {
 	"belowMinPlayers": "A Match needs at least 2 Users",
 	"tooManyUsers": "This Map has no room for so many Users",
@@ -65,6 +72,8 @@ func _render() -> void:
 		users.add_child(_user_card(user, room))
 	_column.add_child(users)
 
+	_column.add_child(_settings(Online.porter.game.settings, room.isAdmin))
+
 	var menu := VBoxContainer.new()
 	menu.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	if room.isAdmin:
@@ -84,6 +93,46 @@ func _render() -> void:
 	var buttons := _column.find_children("", "Button", true, false)
 	var same := buttons.filter(func(button: Button) -> bool: return button.text == focused_text)
 	((menu.get_child(0) as Button) if same.is_empty() else same[0] as Button).grab_focus()
+
+
+## What the next Match will be like, which the Admin may change: each value between two
+## buttons for the Admin, and as plain text for everyone else.
+func _settings(settings: Dictionary, editable: bool) -> Control:
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 48)
+	var maps := Array(ResourceLoader.list_directory("res://maps")).filter(
+			func(file: String) -> bool: return file.ends_with(".tscn")).map(
+			func(file: String) -> String: return file.get_basename())
+	var map_at := maps.find(settings.map)
+	var rounds := int(settings.roundsToWin)
+	var seconds := int(settings.roundTime)
+	var choices: Array[Array] = [
+		["Map: %s" % (settings.map as String).capitalize(),
+			{"map": maps[posmod(map_at - 1, maps.size())]}, {"map": maps[posmod(map_at + 1, maps.size())]}],
+		["First to %d" % rounds,
+			{"roundsToWin": maxi(rounds - 1, MIN_ROUNDS)}, {"roundsToWin": mini(rounds + 1, MAX_ROUNDS)}],
+		["%d:%02d a Round" % [seconds / 60, seconds % 60],
+			{"roundTime": maxi(seconds - TIME_STEP, MIN_TIME)}, {"roundTime": mini(seconds + TIME_STEP, MAX_TIME)}],
+	]
+	for choice in choices:
+		var value := HBoxContainer.new()
+		var text := Ui.label(choice[0], Ui.SMALL_SIZE)
+		text.custom_minimum_size.x = 260
+		if editable:
+			value.add_child(Ui.button("<", _change_settings.bind(settings, choice[1])))
+		value.add_child(text)
+		if editable:
+			value.add_child(Ui.button(">", _change_settings.bind(settings, choice[2])))
+		row.add_child(value)
+	return row
+
+
+## The Admin sends the settings whole, with one of them changed.
+func _change_settings(settings: Dictionary, change: Dictionary) -> void:
+	var next := {"map": settings.map, "roundsToWin": settings.roundsToWin, "roundTime": settings.roundTime}
+	next.merge(change, true)
+	Online.porter.send("porter:updateSettings", next)
 
 
 func _user_card(user: Dictionary, room: Dictionary) -> Control:

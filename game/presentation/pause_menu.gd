@@ -46,6 +46,13 @@ func _init() -> void:
 	column.add_child(_quit)
 
 
+## Adds a button above the one that quits.
+func add_action(text: String, action: Callable) -> void:
+	var button := Ui.button(text, action)
+	_quit.add_sibling(button)
+	_quit.get_parent().move_child(button, _quit.get_index())
+
+
 ## Says where quitting leads, where that is not the title.
 func name_quit(text: String) -> void:
 	_quit.text = text

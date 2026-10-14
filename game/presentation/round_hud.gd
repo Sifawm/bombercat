@@ -5,6 +5,13 @@ extends HBoxContainer
 
 const PORTRAIT_SIZE := Vector2(120, 120)
 const POWERUP_SIZE := Vector2(52, 52)
+const SEPARATION := 24
+## The middle of the picture, left to the timer.
+const TIMER_WIDTH := 472
+## How wide the texts of a panel are with two Players, and how much smaller everything is
+## with more.
+const TEXTS_WIDTH := 480
+const CROWDED_SCALE := 0.5
 
 var _names: Array[String] = []
 var _wins_labels: Array[Label] = []
@@ -18,15 +25,22 @@ var _held_shown: Array[Array] = []
 func _init(cat_picks: Array[int], names: PackedStringArray) -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE, Control.PRESET_MODE_MINSIZE, 16)
 	alignment = BoxContainer.ALIGNMENT_CENTER
-	add_theme_constant_override("separation", 520)  # leaves the middle to the timer
+	add_theme_constant_override("separation", SEPARATION)
+	var crowded := cat_picks.size() > 2
+	var on_the_left := ceili(cat_picks.size() / 2.0)
 	for player in cat_picks.size():
-		var mirrored := player % 2 == 1  # the right-hand panel reads from the right
+		if player == on_the_left:
+			var timer_space := Control.new()
+			timer_space.custom_minimum_size.x = TIMER_WIDTH
+			add_child(timer_space)
+		var mirrored := player >= on_the_left  # the right-hand panels read from the right
 		var panel := HBoxContainer.new()
-		var portrait := ModelView.new(Roster.cat_scene(cat_picks[player]), PORTRAIT_SIZE)
+		var portrait := ModelView.new(Roster.cat_scene(cat_picks[player]),
+				PORTRAIT_SIZE * (0.75 if crowded else 1.0))
 		portrait.play("idle")
 		var texts := VBoxContainer.new()
-		texts.custom_minimum_size.x = 480
-		var wins := Ui.label("", 0, Roster.PLAYER_COLORS[player])
+		texts.custom_minimum_size.x = TEXTS_WIDTH * (CROWDED_SCALE if crowded else 1.0)
+		var wins := Ui.label("", Ui.SMALL_SIZE if crowded else 0, Roster.PLAYER_COLORS[player])
 		var held := HBoxContainer.new()
 		held.custom_minimum_size.y = POWERUP_SIZE.y
 		held.alignment = BoxContainer.ALIGNMENT_CENTER
