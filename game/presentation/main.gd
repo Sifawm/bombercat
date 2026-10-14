@@ -10,8 +10,11 @@ var _screen: Node
 var _curtain := ColorRect.new()
 ## The index in Roster.CATS of each Player's Cat, kept for a Rematch.
 var _picks: Array[int]
-## Whether the screen shown, or on its way in, is one of a Room.
-var _in_room := false
+## The screen of a Room that is shown or on its way in: "room", "match" or "result"; "" out
+## of a Room.
+var _room_screen := ""
+## Whether the User chose to leave the result of the last Match for the Waiting Room.
+var _result_left := false
 
 
 func _ready() -> void:
@@ -28,6 +31,7 @@ func _ready() -> void:
 	if Online.porter == null:
 		return _show_title()
 	Online.porter.connection_changed.connect(_on_connection_changed)
+	Online.porter.game_changed.connect(_show_room_screen.unbind(1))
 	# A reloaded page goes back to its Room, and an invite link goes straight to its door.
 	if Online.porter.resume() or Online.room_in_address() != "":
 		_show_online_entry()
@@ -77,15 +81,64 @@ func _show_online_entry() -> void:
 
 ## Being connected is being in a Room; anything that ends it leads back to the entry.
 func _on_connection_changed(connection: Dictionary) -> void:
-	if connection.status == "connected" and not _in_room:
-		_in_room = true
+	if connection.status == "connected" and _room_screen == "":
 		Online.set_room_in_address(Online.porter.room.id)
-		_show(WaitingRoom.new())
-	elif connection.status == "closed" and _in_room:
-		_in_room = false
+		_show_room_screen()
+	elif connection.status == "closed" and _room_screen != "":
+		_room_screen = ""
+		get_tree().paused = false
 		if not Online.unreachable():  # its Room may still be there to come back to
 			Online.set_room_in_address("")
 		_show_online_entry()
+
+
+## Shows the screen the Room's Match calls for: the Match while it is played, its result
+## once it has ended, the Waiting Room otherwise.
+func _show_room_screen() -> void:
+	if Online.porter.connection.status != "connected":
+		return
+	var game: Dictionary = Online.porter.game
+	var status: String = game["match"].status
+	var wanted := "room"
+	# A Match that has just started has no Round yet; one that ended before its first has no result.
+	if game.state.round != null:
+		if status == "running" or status == "paused":
+			wanted = "match"
+			_result_left = false
+		elif status == "ended" and not _result_left:
+			wanted = "result"
+	if wanted == _room_screen:
+		return
+	_room_screen = wanted
+	get_tree().paused = false
+	match wanted:
+		"match":
+			var view: Node = ROUND_VIEW.instantiate()
+			view.set_script(OnlineRoundView)
+			(view as OnlineRoundView).quit_requested.connect(Online.porter.leave)
+			_show(view, false)  # it plays the Round music itself
+		"result":
+			_show(_online_result(game))
+		_:
+			_show(WaitingRoom.new())
+
+
+func _online_result(game: Dictionary) -> MatchResult:
+	var game_match := OnlineRoundView.match_of(game, OnlineRoundView.TUNED)
+	game_match.start_round()  # takes the tallies of the state
+	var reason: Dictionary = game["match"].reason
+	if reason.by == "game" and reason.reason.winner != null:
+		game_match.winner = int(reason.reason.winner)
+	var names := PackedStringArray(game.state.players)
+	var picks: Array[int] = []
+	picks.assign(Array(names).map(Online.cat_of))
+	var is_admin: bool = Online.porter.room.isAdmin
+	var result := MatchResult.new(game_match, picks, names, "Back to the Room", is_admin)
+	result.rematch_pressed.connect(func() -> void: Online.porter.send("porter:startMatch"))
+	result.cat_select_pressed.connect(func() -> void:
+		_result_left = true
+		_show_room_screen())
+	return result
 
 
 func _show_cat_select() -> void:
@@ -105,7 +158,7 @@ func _start_match(picks: Array[int] = _picks) -> void:
 
 
 func _show_match_result(game_match: Match) -> void:
-	var result := MatchResult.new(game_match, _picks)
+	var result := MatchResult.new(game_match, _picks, PackedStringArray(_picks.map(Roster.cat_name)))
 	result.rematch_pressed.connect(_start_match)
 	result.cat_select_pressed.connect(_show_cat_select)
 	_show(result)

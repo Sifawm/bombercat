@@ -13,8 +13,9 @@ var _held_rows: Array[HBoxContainer] = []
 var _held_shown: Array[Array] = []
 
 
-## `cat_picks` holds the index in Roster.CATS of each Player's Cat.
-func _init(cat_picks: Array[int]) -> void:
+## `cat_picks` holds the index in Roster.CATS of each Player's Cat, and `names` what to
+## call each Player.
+func _init(cat_picks: Array[int], names: PackedStringArray) -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE, Control.PRESET_MODE_MINSIZE, 16)
 	alignment = BoxContainer.ALIGNMENT_CENTER
 	add_theme_constant_override("separation", 520)  # leaves the middle to the timer
@@ -36,7 +37,7 @@ func _init(cat_picks: Array[int]) -> void:
 		if mirrored:
 			panel.move_child(portrait, 1)
 		add_child(panel)
-		_names.append(Roster.cat_name(cat_picks[player]))
+		_names.append(names[player])
 		_wins_labels.append(wins)
 		_held_rows.append(held)
 		_held_shown.append([])

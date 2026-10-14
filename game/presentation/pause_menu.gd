@@ -3,10 +3,16 @@ extends ColorRect
 ## Freezes the game while it is open. Esc or Start opens it (see `open`) and closes it.
 
 signal quit_to_title
+## Emitted in place of closing when `closes_itself` is off.
+signal resume_pressed
 
 const PAUSE_ACTION := &"pause"
 
+## Off where the pause is not this screen's own to end: online it belongs to the Room.
+var closes_itself := true
+
 var _resume: Button
+var _quit: Button
 
 
 func _init() -> void:
@@ -24,7 +30,7 @@ func _init() -> void:
 	color = Color(0.0, 0.0, 0.0, 0.7)
 	var column := Ui.centred_column(self)
 	column.add_child(Ui.label("Paused", Ui.TITLE_SIZE))
-	_resume = Ui.button("Resume", _close)
+	_resume = Ui.button("Resume", _resume_or_ask)
 	column.add_child(_resume)
 	column.add_child(Ui.button("How to Play", _show_how_to_play))
 	for bus: String in ["Music", "Effects"]:
@@ -34,9 +40,15 @@ func _init() -> void:
 		toggle.button_pressed = not AudioServer.is_bus_mute(index)
 		toggle.toggled.connect(func(on: bool) -> void: AudioServer.set_bus_mute(index, not on))
 		column.add_child(toggle)
-	column.add_child(Ui.button("Quit to Title", func() -> void:
+	_quit = Ui.button("Quit to Title", func() -> void:
 		get_tree().paused = false
-		quit_to_title.emit()))
+		quit_to_title.emit())
+	column.add_child(_quit)
+
+
+## Says where quitting leads, where that is not the title.
+func name_quit(text: String) -> void:
+	_quit.text = text
 
 
 func open() -> void:
@@ -48,10 +60,17 @@ func open() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if visible and (event.is_action_pressed(PAUSE_ACTION) or event.is_action_pressed("ui_cancel")):
 		get_viewport().set_input_as_handled()
-		_close()
+		_resume_or_ask()
 
 
-func _close() -> void:
+func _resume_or_ask() -> void:
+	if closes_itself:
+		close()
+	else:
+		resume_pressed.emit()
+
+
+func close() -> void:
 	for child in get_children():
 		if child is HowToPlay:  # closed with Start while the card was open
 			child.queue_free()

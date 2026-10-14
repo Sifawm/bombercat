@@ -79,26 +79,29 @@ func _exit_tree() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed(PauseMenu.PAUSE_ACTION):
 		get_viewport().set_input_as_handled()
-		_pause_menu.open()
+		_request_pause()
+
+
+func _request_pause() -> void:
+	_pause_menu.open()
+
+
+## What to call a Player on screen.
+func _player_name(player: int) -> String:
+	return Roster.cat_name(cat_picks[player])
+
+
+func _create_match(map: MapData) -> Match:
+	return Match.new(map, config, cat_picks.size())
 
 
 func _physics_process(delta: float) -> void:
 	if _round.finished:
 		return
 	if _countdown_left > 0.0:
-		var second := ceili(_countdown_left)
-		_countdown_left -= delta
-		if _countdown_left > COUNTDOWN_SECONDS:
-			pass  # the Cats are still dropping in
-		elif _countdown_left <= 0.0:
-			_result_label.text = "Go!"
-			Audio.play(&"go")
-		elif ceili(_countdown_left) != second or _result_label.text == "":
-			_result_label.text = str(ceili(_countdown_left))
-			Audio.play(&"countdown")
+		_count_down(_countdown_left - delta)
 		return
-	if _result_label.text == "Go!" and _round.time_left < config.round_time - GO_SECONDS:
-		_result_label.text = ""
+	_clear_go()
 	for player in _controllers.size():
 		_controllers[player].drive(_round, player)
 	var before: Array[Vector2] = []
@@ -108,6 +111,25 @@ func _physics_process(delta: float) -> void:
 	_round.step(delta)
 	for player in _round.cats.size():
 		_cat_moving[player] = _round.cats[player].position != before[player]
+
+
+## Takes the countdown to `left` seconds, showing and sounding each second it crosses.
+func _count_down(left: float) -> void:
+	var second := ceili(_countdown_left)
+	_countdown_left = left
+	if _countdown_left > COUNTDOWN_SECONDS:
+		pass  # the Cats are still dropping in
+	elif _countdown_left <= 0.0:
+		_result_label.text = "Go!"
+		Audio.play(&"go")
+	elif ceili(_countdown_left) != second or _result_label.text == "":
+		_result_label.text = str(ceili(_countdown_left))
+		Audio.play(&"countdown")
+
+
+func _clear_go() -> void:
+	if _result_label.text == "Go!" and _round.time_left < config.round_time - GO_SECONDS:
+		_result_label.text = ""
 
 
 func _process(delta: float) -> void:
@@ -146,10 +168,10 @@ func start_match() -> void:
 		set_physics_process(false)
 		set_process(false)
 		return
-	_match = Match.new(map, config, cat_picks.size())
+	_match = _create_match(map)
 	if _hud != null:
 		_hud.queue_free()
-	_hud = RoundHud.new(cat_picks)
+	_hud = RoundHud.new(cat_picks, PackedStringArray(range(cat_picks.size()).map(_player_name)))
 	$Hud.add_child(_hud)
 	$Hud.move_child(_hud, 0)
 	_show_wins()
@@ -214,7 +236,7 @@ func _start_round() -> void:
 
 	for y in map.size.y:
 		for x in map.size.x:
-			if map.tile_at(Vector2i(x, y)) == MapData.Tile.CRATE:
+			if _round.board.tile_at(Vector2i(x, y)) == MapData.Tile.CRATE:
 				_crate_nodes[Vector2i(x, y)] = _place(CRATE.instantiate(), Vector2(x, y))
 	for player in cat_picks.size():
 		var view := CatView.new(Roster.cat_scene(cat_picks[player]))
@@ -323,13 +345,18 @@ func _on_powerup_revealed(tile: Vector2i, powerup: Powerup) -> void:
 ## The collected Powerup rises over the Cat and shrinks away. A Powerup sounds like the
 ## others unless there is a "collect_<id>" sound of its own.
 func _on_powerup_collected(player: int, powerup: Powerup) -> void:
-	var node := _take_powerup_node(_round.cats[player].tile())
+	var node := _take_powerup_node(_collected_tile(player))
 	var tween := node.create_tween().set_parallel()
 	tween.tween_property(node, "position:y", node.position.y + 1.6, 0.5).set_ease(Tween.EASE_OUT)
 	tween.tween_property(node, "scale", Vector3.ZERO, 0.5).set_ease(Tween.EASE_IN)
 	tween.chain().tween_callback(node.queue_free)
 	var own_sound := StringName("collect_" + powerup.id)
 	Audio.play(own_sound if Audio.has(own_sound) else &"powerup")
+
+
+## The Tile of the Powerup a Player's Cat has just collected.
+func _collected_tile(player: int) -> Vector2i:
+	return _round.cats[player].tile()
 
 
 func _on_powerup_destroyed(tile: Vector2i, _powerup: Powerup) -> void:
@@ -381,7 +408,7 @@ func _on_round_ended(winner: int) -> void:
 			if _round.cats[player].alive:
 				_cat_views[player].play("idle")
 	else:
-		_result_label.text = "%s wins the Round!" % Roster.cat_name(cat_picks[winner])
+		_result_label.text = "%s wins the Round!" % _player_name(winner)
 		_cat_views[winner].play("win")
 		_throw_confetti()
 		Audio.play(&"victory")

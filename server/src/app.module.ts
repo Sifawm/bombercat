@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { PorterModule } from '@porterkit/nestjs';
 import { type Games, isProfile } from '@bombercat/shared';
-import { BombercatManager, BridgeProbeManager } from './managers';
+import { BombercatManager } from './bombercat.manager';
 
-@Module({ providers: [BombercatManager, BridgeProbeManager] })
+@Module({ providers: [BombercatManager] })
 export class GamesModule {}
 
 @Module({

@@ -9,7 +9,7 @@ test('a Bomb is placed on the Cat\'s Tile', () => {
   const round = makeRound(LONG_CORRIDOR);
   round.placeBomb(0);
   round.advance(STEP);
-  expect(round.named('bombPlaced')).toEqual([{ type: 'bombPlaced', tile: { x: 1, y: 1 }, owner: 0 }]);
+  expect(round.named('bombPlaced')).toEqual([{ type: 'bombPlaced', tile: { x: 1, y: 1 }, owner: 0, range: 2 }]);
   expect(round.bombs).toHaveLength(1);
 });
 
@@ -51,7 +51,7 @@ test('an Explosion destroys the first Crate and stops', () => {
   const round = makeRound(['########', '#S.x..S#', '########'], config({ bombRange: 3 }));
   round.placeBomb(0);
   round.advance(3.1);
-  expect(round.named('crateDestroyed')).toEqual([{ type: 'crateDestroyed', tile: { x: 3, y: 1 } }]);
+  expect(round.named('crateDestroyed')).toEqual([{ type: 'crateDestroyed', tile: { x: 3, y: 1 }, owner: 0 }]);
   expect(round.board.tileAt({ x: 3, y: 1 })).toBe('floor');
   const { tiles } = round.named('bombDetonated')[0];
   expect(tiles).toContainEqual({ x: 3, y: 1 }); // the Crate's Tile is in the Explosion
@@ -108,7 +108,7 @@ test('a Chain Reaction still clears one layer of Crates', () => {
   round.advance(0.25);
   round.placeBomb(0); // Bombs on (1, 1) and (2, 1); both Explosions reach the Crate on (3, 1)
   round.advance(2.8);
-  expect(round.named('crateDestroyed')).toEqual([{ type: 'crateDestroyed', tile: { x: 3, y: 1 } }]);
+  expect(round.named('crateDestroyed')).toEqual([{ type: 'crateDestroyed', tile: { x: 3, y: 1 }, owner: 0 }]);
   expect(round.board.tileAt({ x: 4, y: 1 })).toBe('crate'); // the Crate behind it survives
   expect(round.cats[0].activeBombs).toBe(0); // Bomb Capacity is free again
 });

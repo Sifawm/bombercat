@@ -1,4 +1,4 @@
-import { bombercat, bridgeProbe, type Games, type Profile } from '@bombercat/shared';
+import { bombercat, type Games, type Profile } from '@bombercat/shared';
 import { createPorter, defineGame } from '@porterkit/client';
 import { exposeToGodot } from '@porterkit/godot';
 
@@ -9,9 +9,12 @@ const porter = createPorter<Games, Profile>({
   httpUrl: location.origin,
   wsUrl: `${location.origin.replace(/^http/, 'ws')}/porter/ws`,
   games: {
-    bombercat: defineGame<Games, 'bombercat'>(bombercat, {}),
-    // `moved` has no Applier: it comes on every Tick and goes straight to whoever draws.
-    bridgeProbe: defineGame<Games, 'bridgeProbe'>(bridgeProbe, {}),
+    // Only the start and the end of a Round go through the state, whole. What comes on every Tick,
+    // and what happens in a Round, has no Applier: it goes straight to the scene that draws (ADR 0004).
+    bombercat: defineGame<Games, 'bombercat'>(bombercat, {
+      roundStarted: (game, state) => ({ ...game, state }),
+      scored: (game, state) => ({ ...game, state }),
+    }),
   },
 });
 

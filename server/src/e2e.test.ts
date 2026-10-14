@@ -3,10 +3,14 @@ import type { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter } from '@nestjs/platform-fastify';
 import { WsAdapter } from '@nestjs/platform-ws';
-import { bombercat, bridgeProbe, type Games, type Profile, TICK_RATE } from '@bombercat/shared';
+import { bombercat, type Games, type Moved, type Profile, type RoundEvent } from '@bombercat/shared';
 import { createPorter, defineGame, type Porter } from '@porterkit/client';
 import { afterEach, beforeEach, expect, test } from 'vitest';
 import { AppModule } from './app.module';
+import { pacing } from './bombercat.manager';
+
+// No test waits for a countdown.
+Object.assign(pacing, { countdown: 40, roundOver: 40 });
 
 let app: INestApplication;
 let port: number;
@@ -35,8 +39,10 @@ function client() {
       removeItem: (key) => void stored.delete(key),
     },
     games: {
-      bombercat: defineGame<Games, 'bombercat'>(bombercat, {}),
-      bridgeProbe: defineGame<Games, 'bridgeProbe'>(bridgeProbe, {}),
+      bombercat: defineGame<Games, 'bombercat'>(bombercat, {
+        roundStarted: (game, state) => ({ ...game, state }),
+        scored: (game, state) => ({ ...game, state }),
+      }),
     },
   });
   clients.push(porter);
@@ -89,20 +95,110 @@ test('a Room takes four Users, each with a Cat, and the Admin runs it', async ()
   expect(bea.connection).toEqual({ status: 'closed', reason: 'kicked' });
 });
 
-test('the bridge probe sends a snapshot on every Tick', async () => {
+/** Ana, the Admin, and whoever else is named, in a Room together. */
+async function room(...others: string[]) {
   const ana = client();
-  await createRoom(ana);
-  ana.send('porter:changeGame', { game: 'bridgeProbe' });
-  await until(ana, () => ana.game().name === 'bridgeProbe');
+  const roomId = await createRoom(ana);
+  const rest = [];
+  for (const name of others) rest.push(await join(name, roomId));
+  await until(ana, () => ana.room!.users.length === 1 + others.length);
+  return { roomId, ana, rest };
+}
 
-  const ticks: number[] = [];
-  ana.on('moved', (snapshot) => ticks.push(snapshot.tick));
+async function join(name: string, roomId: string) {
+  const user = client();
+  expect(await user.login({ name, profile: { cat: 1 }, roomId })).toMatchObject({ ok: true });
+  await until(user, () => user.connection.status === 'connected');
+  return user;
+}
+
+const state = (user: Porter<Games, Profile>) => user.game('bombercat').state;
+const status = (user: Porter<Games, Profile>) => user.game().match.status;
+
+/** Everything that happens in the Match from now on, as this User hears it. */
+function heard(user: Porter<Games, Profile>) {
+  const events: RoundEvent[] = [];
+  user.on('happened', (happened) => events.push(...happened));
+  return events;
+}
+
+test('a Match: Inputs move a Cat a Tick each, its Bomb kills it and the other Player wins', async () => {
+  const { ana, rest } = await room('Bea');
+  const [bea] = rest;
+  ana.send('porter:updateSettings', { map: 'backyard', roundsToWin: 1, roundTime: 120 });
   ana.send('porter:startMatch');
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  ana.send('porter:endMatch');
-  await until(ana, () => ana.game().match.status === 'ended');
+  await until(bea, () => state(bea).round !== null);
+  expect(state(bea).players).toEqual(['Ana', 'Bea']);
+  expect(state(bea).round!.cats.map(({ x, y }) => ({ x, y }))).toEqual([
+    { x: 1, y: 1 },
+    { x: 11, y: 9 },
+  ]);
+  expect(state(bea).round!.rows[1]).toBe('#...xxxxx...#');
 
-  expect(ticks).toEqual(ticks.map((_, index) => index + 1));
-  expect(ticks.length).toBeGreaterThan(TICK_RATE / 2 - 10);
-  expect(ticks.length).toBeLessThanOrEqual(TICK_RATE / 2 + 1);
+  // One Input for each Tick heard, as a client sends them: 30 to the right, then a Bomb.
+  const events = heard(bea);
+  let last: Moved | undefined;
+  let seq = 0;
+  ana.on('moved', (moved) => {
+    last = moved;
+    if (seq < 31) ana.send('input', { seq: ++seq, x: seq <= 30 ? 1 : 0, y: 0, bomb: seq === 31 });
+  });
+  await until(ana, () => status(ana) === 'ended');
+
+  expect(last!.cats[0]).toMatchObject({ x: expect.closeTo(3, 3), y: 1, fx: 1, fy: 0, seq: 31 }); // speed 4 for half a second
+  expect(events).toContainEqual({ type: 'bombPlaced', tile: { x: 3, y: 1 }, owner: 0, range: 2 });
+  expect(events).toContainEqual({ type: 'catEliminated', player: 0 });
+  expect(events.at(-1)).toEqual({ type: 'roundEnded', winner: 1 });
+  expect(ana.game('bombercat').match).toEqual({ status: 'ended', reason: { by: 'game', reason: { winner: 1 } } });
+  expect(state(bea)).toMatchObject({ wins: [0, 1], bombsPlaced: [1, 0] }); // those who played know the score
+  // The state of an ended Match is what a User that joins now gets.
+  const cleo = await join('Cleo', ana.room!.id);
+  expect(state(cleo)).toMatchObject({ wins: [0, 1], bombsPlaced: [1, 0], players: ['Ana', 'Bea'] });
+  expect(state(cleo).round!.finished).toBe(true);
+}, 15_000);
+
+test('any Player pauses the Match and sets it going again; a User that only watches does not', async () => {
+  const { roomId, ana, rest } = await room('Bea');
+  const [bea] = rest;
+  ana.send('porter:startMatch');
+  await until(bea, () => status(bea) === 'running');
+  bea.send('togglePause');
+  await until(ana, () => status(ana) === 'paused');
+  bea.send('togglePause');
+  await until(ana, () => status(ana) === 'running');
+
+  const cleo = await join('Cleo', roomId); // it finds the Match as it is, and its Cats
+  expect(state(cleo).round!.cats).toHaveLength(2);
+  const rejected = new Promise((resolve) => cleo.on('porter:messageRejected', resolve));
+  cleo.send('togglePause');
+  expect(await rejected).toEqual({ rejected: 'togglePause', reason: { code: 'game', reason: 'notAPlayer' } });
+  ana.send('togglePause'); // the Admin plays too
+  await until(cleo, () => status(cleo) === 'paused');
+});
+
+test('a Player that leaves loses its Cat, and a Match left with one Player has no winner', async () => {
+  const { ana, rest } = await room('Bea', 'Cleo');
+  const events = heard(ana);
+  ana.send('porter:startMatch');
+  await new Promise((resolve) => ana.on('moved', resolve)); // the Round is being played
+  ana.send('porter:kickUser', { name: 'Cleo' });
+  await until(rest[1], () => rest[1].connection.status === 'closed');
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  expect(events).toEqual([{ type: 'catEliminated', player: 2 }]);
+  expect(status(ana)).toBe('running');
+
+  await join('Dani', ana.room!.id); // it watches, so the Room keeps its minimum of Users
+  ana.send('porter:kickUser', { name: 'Bea' });
+  await until(ana, () => status(ana) === 'ended');
+  expect(ana.game('bombercat').match).toEqual({ status: 'ended', reason: { by: 'game', reason: { winner: null } } });
+});
+
+test('the Admin changes the settings within their limits', async () => {
+  const { ana } = await room();
+  const rejected = new Promise((resolve) => ana.on('porter:messageRejected', resolve));
+  ana.send('porter:updateSettings', { map: 'attic', roundsToWin: 2, roundTime: 120 } as never);
+  expect(await rejected).toMatchObject({ rejected: 'porter:updateSettings', reason: { code: 'game', reason: 'invalidSettings' } });
+  ana.send('porter:updateSettings', { map: 'backyard', roundsToWin: 3, roundTime: 90 });
+  await until(ana, () => ana.game('bombercat').settings.roundsToWin === 3);
+  expect(ana.game('bombercat').settings).toMatchObject({ map: 'backyard', roundsToWin: 3, roundTime: 90 });
 });

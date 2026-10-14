@@ -3,24 +3,10 @@ import type { GameConfig, RandomInt } from './config';
 import { randomInt } from './config';
 import { type MapData, sameTile, tileAt, tileKey, type Vec } from './map';
 import { EPSILON, move } from './movement';
+import type { RoundEvent } from '@bombercat/shared';
 import { CURSES, distributePowerups, POWERUPS } from './powerups';
 
-/** What happened in a step of a Round. Tiles are copies: they stay as they were when it happened. */
-export type RoundEvent =
-  | { type: 'bombPlaced'; tile: Vec; owner: number }
-  /** A pushed Bomb slid from the Tile `from` onto `to`. */
-  | { type: 'bombMoved'; from: Vec; to: Vec }
-  | { type: 'bombDetonated'; tile: Vec; tiles: Vec[] }
-  | { type: 'crateDestroyed'; tile: Vec }
-  | { type: 'powerupRevealed'; tile: Vec; powerup: string }
-  | { type: 'powerupCollected'; player: number; powerup: string }
-  | { type: 'powerupDestroyed'; tile: Vec; powerup: string }
-  | { type: 'curseStarted'; player: number; curse: string }
-  | { type: 'curseEnded'; player: number; curse: string }
-  | { type: 'nineLivesConsumed'; player: number }
-  | { type: 'catEliminated'; player: number }
-  /** `winner` is a Player index or DRAW. */
-  | { type: 'roundEnded'; winner: number };
+export type { RoundEvent };
 
 export const DRAW = -1;
 
@@ -48,6 +34,7 @@ export class Round {
 
   private readonly moves: Vec[] = [];
   private readonly bombRequests: boolean[] = [];
+  private readonly forfeits = new Set<number>();
   /**
    * Crates reached by this step's Explosions. They stay on the Board until every Bomb of the step
    * has detonated, so a Chain Reaction still clears a single layer of Crates. Each goes with the
@@ -58,13 +45,15 @@ export class Round {
 
   /**
    * `spawnPoints` holds one Spawn Point per Player. `random` decides everything left to chance;
-   * pass a seeded one to get a reproducible Round.
+   * pass a seeded one to get a reproducible Round. The Players in `absent` have no Cat to fight
+   * with: theirs is out from the start.
    */
   constructor(
     map: MapData,
     readonly config: GameConfig,
     spawnPoints: readonly Vec[],
     private readonly random: RandomInt = randomInt,
+    absent: readonly number[] = [],
   ) {
     this.board = new Board(map);
     const crates: Vec[] = [];
@@ -82,7 +71,7 @@ export class Round {
       this.cats.push({
         position: { ...tile },
         facing: { x: 0, y: 1 },
-        alive: true,
+        alive: !absent.includes(this.cats.length),
         speed: config.catSpeed,
         bombCapacity: config.bombCapacity,
         bombRange: config.bombRange,
@@ -111,9 +100,16 @@ export class Round {
     this.bombRequests[player] = true;
   }
 
+  /** Command: the Player gives up its Cat, which is out of the Round at the next step. */
+  forfeit(player: number): void {
+    this.forfeits.add(player);
+  }
+
   step(delta: number): RoundEvent[] {
     if (this.finished) return [];
     this.happened = [];
+    for (const player of this.forfeits) if (this.cats[player].alive) this.eliminate(player);
+    this.forfeits.clear();
     const { board, cats, config } = this;
     cats.forEach((cat, player) => {
       if (!cat.alive) return;
@@ -146,7 +142,7 @@ export class Round {
     for (const [key, { tile, owner }] of this.doomedCrates) {
       board.destroyCrate(tile);
       cats[owner].cratesDestroyed += 1;
-      this.happened.push({ type: 'crateDestroyed', tile });
+      this.happened.push({ type: 'crateDestroyed', tile, owner });
       const powerup = board.hiddenPowerups.get(key);
       if (powerup !== undefined) {
         board.hiddenPowerups.delete(key);
@@ -163,12 +159,7 @@ export class Round {
         cat.invulnerableLeft = config.nineLivesInvulnerability;
         this.happened.push({ type: 'nineLivesConsumed', player });
       } else {
-        cat.alive = false;
-        if (cat.curse !== null) {
-          this.happened.push({ type: 'curseEnded', player, curse: cat.curse.id });
-          cat.curse = null;
-        }
-        this.happened.push({ type: 'catEliminated', player });
+        this.eliminate(player);
       }
     });
     for (const [key, left] of board.explosions) {
@@ -186,16 +177,27 @@ export class Round {
     return this.happened;
   }
 
+  private eliminate(player: number): void {
+    const cat = this.cats[player];
+    cat.alive = false;
+    if (cat.curse !== null) {
+      this.happened.push({ type: 'curseEnded', player, curse: cat.curse.id });
+      cat.curse = null;
+    }
+    this.happened.push({ type: 'catEliminated', player });
+  }
+
   private collect(player: number): void {
     const cat = this.cats[player];
-    const key = tileKey(tileOf(cat.position));
+    const tile = tileOf(cat.position);
+    const key = tileKey(tile);
     const powerup = this.board.powerups.get(key);
     if (powerup === undefined) return;
     const curseBefore = cat.curse;
     this.board.powerups.delete(key);
     cat.collected.push(powerup);
     POWERUPS[powerup].apply(cat, this.config, this.random);
-    this.happened.push({ type: 'powerupCollected', player, powerup });
+    this.happened.push({ type: 'powerupCollected', player, tile, powerup });
     if (cat.curse !== null && cat.curse !== curseBefore) {
       if (curseBefore !== null) this.happened.push({ type: 'curseEnded', player, curse: curseBefore.id });
       this.happened.push({ type: 'curseStarted', player, curse: cat.curse.id });
@@ -252,7 +254,7 @@ export class Round {
     cat.bombsPlaced += 1;
     this.bombs.push(bomb);
     this.board.bombs.set(tileKey(tile), bomb);
-    this.happened.push({ type: 'bombPlaced', tile, owner: player });
+    this.happened.push({ type: 'bombPlaced', tile, owner: player, range: bomb.range });
   }
 
   /** Detonates `first` and, as Chain Reactions, every Bomb its Explosion reaches. */

@@ -87,7 +87,7 @@ test('a Crate without a Powerup reveals nothing', () => {
 
 test('walking over a Powerup collects it', () => {
   const round = roundWithCollected('yarn_ball');
-  expect(round.named('powerupCollected')).toEqual([{ type: 'powerupCollected', player: 0, powerup: 'yarn_ball' }]);
+  expect(round.named('powerupCollected')).toEqual([{ type: 'powerupCollected', player: 0, tile: { x: 3, y: 1 }, powerup: 'yarn_ball' }]);
   expect(round.board.powerups.size).toBe(0); // gone from the Floor
   expect(round.cats[0].collected).toEqual(['yarn_ball']);
 });

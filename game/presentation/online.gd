@@ -17,6 +17,10 @@ const CLOSED: Dictionary[String, String] = {
 ## Null wherever there is no online play.
 static var porter: Client
 
+## The Cat of every User seen in the Room, by name. A User that left keeps its entry, so
+## the Match it played in can still be drawn.
+static var _cats: Dictionary[String, int] = {}
+
 
 ## Looks for the page's Porter client. The addon is not an autoload because it logs an error
 ## wherever there is no page, and the native builds and the tests have none.
@@ -25,6 +29,19 @@ static func start(parent: Node) -> void:
 		return
 	porter = Client.new()
 	parent.add_child(porter)
+	porter.room_changed.connect(_remember_cats)
+	_remember_cats(porter.room)
+
+
+## The index in Roster.CATS of a User's Cat; the first Cat for a User never seen.
+static func cat_of(user_name: String) -> int:
+	return _cats.get(user_name, 0)
+
+
+static func _remember_cats(room: Variant) -> void:
+	if room != null:
+		for user: Dictionary in room.users:
+			_cats[user.name] = int(user.profile.cat)
 
 
 ## The Room the page's address invites to, or "".

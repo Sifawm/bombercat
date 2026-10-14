@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest';
-import { DRAW } from './round';
-import { config, expectPosition, LEFT, makeRound, RIGHT } from './testing';
+import { mapFromRows } from './map';
+import { DRAW, Round } from './round';
+import { config, expectPosition, LEFT, makeRound, RIGHT, STEP } from './testing';
 
 const FACE_TO_FACE = ['####', '#SS#', '####'];
 const CORRIDOR = ['#########', '#S.....S#', '#########'];
@@ -101,4 +102,21 @@ test('four Cats: the last one walking into the Explosion that killed the third i
   round.advance(0.5);
   expect(round.named('catEliminated')).toHaveLength(4);
   expect(round.named('roundEnded')).toEqual([{ type: 'roundEnded', winner: DRAW }]);
+});
+
+test('a Player that gives up its Cat is out at the next step, and one that is absent never fights', () => {
+  const round = makeRound(['#########', '#S..S..S#', '#########']);
+  round.forfeit(1);
+  round.advance(STEP);
+  expect(round.named('catEliminated')).toEqual([{ type: 'catEliminated', player: 1 }]);
+  expect(round.finished).toBe(false);
+  round.forfeit(0);
+  round.advance(STEP);
+  expect(round.named('roundEnded')).toEqual([{ type: 'roundEnded', winner: 2 }]);
+
+  const map = mapFromRows(['#########', '#S..S..S#', '#########']);
+  const short = new Round(map, config(), map.spawnPoints, undefined, [2]);
+  expect(short.cats.map((cat) => cat.alive)).toEqual([true, true, false]);
+  short.forfeit(0);
+  expect(short.step(STEP)).toContainEqual({ type: 'roundEnded', winner: 1 });
 });

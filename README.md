@@ -31,9 +31,9 @@ and `game/control/` (Player controllers that issue commands). Balance values liv
 ## Playing online
 
 Online play exists only in the web build ([ADR 0005](docs/adr/0005-online-is-web-only.md)) and its
-rules run on the server ([ADR 0003](docs/adr/0003-online-rules-run-on-the-server.md)). So far there
-is the Room and, on the server, the rules; no Match is played yet: entering with a name and a Cat, the invite link, and the Admin locking the
-Room and removing Users.
+rules run on the server ([ADR 0003](docs/adr/0003-online-rules-run-on-the-server.md)): a User enters a
+Room with a name and a Cat, the Admin starts the Match, and everyone in the Room plays it. Each
+client sends what its Player asks of its Cat and draws what the server says.
 
 Needs Node 24, pnpm and, until Porter is published, its repository built next to this one at
 `../porter`.
@@ -52,9 +52,10 @@ tests (`server/src/rules/`). The two are allowed to drift, movement excepted
 have one source, the Godot project: `game/tools/export_shared.gd` writes them as JSON into
 `shared/src/`, and those files are versioned.
 
-`game/addons/porter` is a copy of Porter's addon for Godot; `pnpm addon` refreshes it. The Admin's
-"Bridge Probe" button in a Room is a measuring tool, not part of the game: it sends a snapshot the
-size of a Round's on every Tick and shows how many arrive.
+`game/addons/porter` is a copy of Porter's addon for Godot; `pnpm addon` refreshes it.
+
+On the client, `game/online/` holds the Round and the Match as the server tells them
+(`RemoteRound`, `RemoteMatch`), which the Round view draws as it draws a local one.
 
 ## Exporting
 

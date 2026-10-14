@@ -1,8 +1,6 @@
-/** A Tile's coordinates, or a continuous position in Tile units: Tile centres are at whole numbers. */
-export interface Vec {
-  x: number;
-  y: number;
-}
+import type { Vec } from '@bombercat/shared';
+
+export type { Vec };
 
 export type Tile = 'floor' | 'wall' | 'crate';
 
@@ -18,6 +16,12 @@ export interface MapData {
 
 /** What tells one Tile from another where a Tile is a key. */
 export const tileKey = (tile: Vec) => `${tile.x},${tile.y}`;
+
+/** The Tile a key was made from. */
+export const tileOfKey = (key: string): Vec => {
+  const [x, y] = key.split(',').map(Number);
+  return { x, y };
+};
 
 export const sameTile = (a: Vec, b: Vec) => a.x === b.x && a.y === b.y;
 

@@ -77,9 +77,14 @@ func _init(slot: int) -> void:
 
 
 func drive(game_round: Round, player: int) -> void:
-	game_round.set_move(player, _direction())
-	if Input.is_action_just_pressed(action(_slot, "bomb")):
+	game_round.set_move(player, direction())
+	if bombs():
 		game_round.place_bomb(player)
+
+
+## Whether this Player wants a Bomb placed right now.
+func bombs() -> bool:
+	return Input.is_action_just_pressed(action(_slot, "bomb"))
 
 
 func meows() -> bool:
@@ -88,7 +93,7 @@ func meows() -> bool:
 
 ## Four directions only. With keys of both axes held, the one pressed last wins, so a Player
 ## can hold a direction and tap the next one to turn.
-func _direction() -> Vector2i:
+func direction() -> Vector2i:
 	var x := int(_held("right")) - int(_held("left"))
 	var y := int(_held("down")) - int(_held("up"))
 	if Input.is_action_just_pressed(action(_slot, "left")) or Input.is_action_just_pressed(action(_slot, "right")):

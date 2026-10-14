@@ -39,9 +39,10 @@ export class Match {
   /**
    * Starts the next Round on the restored Map; every Cat is back to its starting abilities. The
    * Round takes the commands, but it is the Match that is stepped, or the Round is never counted.
+   * The Players in `absent` take no part in it.
    */
-  startRound(): Round {
-    this.currentRound = new Round(this.map, this.config, this.spawnPoints, this.random);
+  startRound(absent: readonly number[] = []): Round {
+    this.currentRound = new Round(this.map, this.config, this.spawnPoints, this.random, absent);
     return this.currentRound;
   }
 
