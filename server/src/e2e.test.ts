@@ -1,24 +1,26 @@
-import 'reflect-metadata';
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join as joinPath } from 'node:path';
 import type { INestApplication } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { FastifyAdapter } from '@nestjs/platform-fastify';
-import { WsAdapter } from '@nestjs/platform-ws';
 import { bombercat, type Games, type Moved, type Profile, type RoundEvent } from '@bombercat/shared';
 import { createPorter, defineGame, type Porter } from '@porterkit/client';
 import { afterEach, beforeEach, expect, test } from 'vitest';
-import { AppModule } from './app.module';
+import { createApp } from './app';
 import { pacing } from './bombercat.manager';
 
 // No test waits for a countdown.
 Object.assign(pacing, { countdown: 40, roundOver: 40 });
+
+// A page built for the occasion, where the server looks for the real one.
+const WEB_ROOT = mkdtempSync(joinPath(tmpdir(), 'bombercat-web-'));
+writeFileSync(joinPath(WEB_ROOT, 'index.html'), '<title>BomberCat</title>');
 
 let app: INestApplication;
 let port: number;
 const clients: Porter<Games, Profile>[] = [];
 
 beforeEach(async () => {
-  app = await NestFactory.create(AppModule, new FastifyAdapter(), { logger: false });
-  app.useWebSocketAdapter(new WsAdapter(app));
+  app = await createApp(WEB_ROOT, false);
   await app.listen(0, '127.0.0.1');
   port = app.getHttpServer().address().port;
 });
@@ -201,4 +203,12 @@ test('the Admin changes the settings within their limits', async () => {
   ana.send('porter:updateSettings', { map: 'backyard', roundsToWin: 3, roundTime: 90 });
   await until(ana, () => ana.game('bombercat').settings.roundsToWin === 3);
   expect(ana.game('bombercat').settings).toMatchObject({ map: 'backyard', roundsToWin: 3, roundTime: 90 });
+});
+
+test('the server gives the page and Porter from the same origin', async () => {
+  const page = await fetch(`http://127.0.0.1:${port}/`);
+  expect(page.headers.get('content-type')).toContain('text/html');
+  expect(await page.text()).toBe('<title>BomberCat</title>');
+  expect((await fetch(`http://127.0.0.1:${port}/../../etc/passwd`)).status).toBe(404);
+  expect(await client().roomExists('nosuchroom')).toBe(false);
 });

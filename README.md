@@ -46,6 +46,16 @@ pnpm web          # the page on http://localhost:5173, which forwards /porter to
 pnpm test         # the server's tests
 ```
 
+Outside development one process serves everything from one origin
+([ADR 0005](docs/adr/0005-online-is-web-only.md)): the server answers Porter and, when it finds the
+built page in `web/dist`, gives the page too. A Room lives in the memory of that process, so there is
+one of it.
+
+```sh
+pnpm build:web    # the Godot project, then the page, into web/dist
+pnpm start        # the server and the page on :3000; PORT and WEB_ROOT change where
+```
+
 The server has its own rules, a port to TypeScript of `game/rules/` as it was at v1, with the same
 tests (`server/src/rules/`). The two are allowed to drift, movement excepted
 ([ADR 0004](docs/adr/0004-own-cat-is-predicted-with-movement-parity.md)). Maps and balance values

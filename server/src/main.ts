@@ -1,13 +1,9 @@
-import 'reflect-metadata';
-import { NestFactory } from '@nestjs/core';
-import { FastifyAdapter } from '@nestjs/platform-fastify';
-import { WsAdapter } from '@nestjs/platform-ws';
-import { AppModule } from './app.module';
+import { join } from 'node:path';
+import { createApp } from './app';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, new FastifyAdapter());
-  app.useWebSocketAdapter(new WsAdapter(app));
-  await app.listen(Number(process.env.PORT ?? 3000));
+  const app = await createApp(process.env.WEB_ROOT ?? join(__dirname, '../../web/dist'));
+  await app.listen(Number(process.env.PORT ?? 3000), '0.0.0.0');
 }
 
 void bootstrap();

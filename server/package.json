@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@bombercat/shared": "workspace:*",
+    "@fastify/static": "^10.1.6",
     "@nestjs/common": "link:../../porter/packages/nestjs/node_modules/@nestjs/common",
     "@nestjs/core": "link:../../porter/packages/nestjs/node_modules/@nestjs/core",
     "@nestjs/platform-fastify": "link:../../porter/packages/nestjs/node_modules/@nestjs/platform-fastify",
