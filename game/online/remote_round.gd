@@ -22,9 +22,8 @@ var _bomb_wanted := false
 var _inputs_sent := 0
 ## The Inputs of `predicted` the server has not answered yet: each its number and its move.
 var _unconfirmed: Array[Dictionary] = []
-## Whether the newest of them is still to be walked, at the next step.
-var _input_to_walk := false
-var _step_seconds := 1.0 / 60.0
+## An Input is for one step, which lasts as long as a Tick of the server.
+var _step_seconds := 1.0 / Engine.physics_ticks_per_second
 
 
 ## `snapshot` is the Round as the server's state gives it.
@@ -81,26 +80,22 @@ func place_bomb(_player: int) -> void:
 	_bomb_wanted = true
 
 
-## What `player` asks of its Cat for this step, numbered, to send to the server.
+## What `player` asks of its Cat for this step, numbered, to send to the server. The
+## predicted Cat walks it at once.
 func take_input(player: int) -> Dictionary:
 	_inputs_sent += 1
 	var input := {"seq": _inputs_sent, "x": _moves[player].x, "y": _moves[player].y, "bomb": _bomb_wanted}
 	_bomb_wanted = false
 	if player == predicted:
 		_unconfirmed.append({"seq": _inputs_sent, "move": _moves[player]})
-		_input_to_walk = true
+		_walk(cats[player], _moves[player])
 	return input
 
 
-## The walk of the predicted Cat for the Input just taken, and what runs down between two
-## words from the server, so that it shows smoothly.
+## Only what runs down between two words from the server, so that it shows smoothly.
 func step(delta: float) -> void:
 	if finished:
 		return
-	_step_seconds = delta
-	if _input_to_walk:
-		_input_to_walk = false
-		_walk(cats[predicted], _unconfirmed.back().move)
 	for bomb in bombs:
 		bomb.fuse_left -= delta
 	for cat in cats:
@@ -116,9 +111,11 @@ func apply_moved(moved: Dictionary) -> void:
 		cats[player].facing = Vector2i(int(known.fx), int(known.fy))
 	if predicted != -1:
 		var answered := int(moved.cats[predicted].seq)
+		if answered > _inputs_sent:
+			answered = 0  # a number from before this Round was built here: none of these Inputs yet
 		_unconfirmed = _unconfirmed.filter(func(input: Dictionary) -> bool: return input.seq > answered)
-		for index in _unconfirmed.size() - int(_input_to_walk):
-			_walk(cats[predicted], _unconfirmed[index].move)
+		for input in _unconfirmed:
+			_walk(cats[predicted], input.move)
 	for bomb in bombs:
 		bomb.slide = Vector2i.ZERO
 		bomb.slide_progress = 0.0

@@ -13,6 +13,8 @@ const TIME_STEP := 30
 const REJECTIONS: Dictionary[String, String] = {
 	"belowMinPlayers": "A Match needs at least 2 Users",
 	"tooManyUsers": "This Map has no room for so many Users",
+	"tooFewUsers": "A Match needs at least 2 Users connected",
+	"invalidSettings": "The server does not take that setting",
 }
 
 var _column: VBoxContainer
@@ -51,8 +53,10 @@ func _rejected(rejection: Dictionary) -> void:
 
 func _render() -> void:
 	_stale = false
+	# Which button has the focus: its text and, as several share one, which of those it is.
 	var focused := get_viewport().gui_get_focus_owner() as Button
 	var focused_text := "" if focused == null else focused.text
+	var focused_at := _buttons_reading(focused_text).find(focused)
 	# Kept out of the rebuild: it holds text that outlives a change of the Room.
 	if _notice.get_parent() != null:
 		_column.remove_child(_notice)
@@ -90,9 +94,8 @@ func _render() -> void:
 	_column.add_child(menu)
 	_column.add_child(_notice)
 	# The button that had the focus is gone; the one that took its place gets it back.
-	var buttons := _column.find_children("", "Button", true, false)
-	var same := buttons.filter(func(button: Button) -> bool: return button.text == focused_text)
-	((menu.get_child(0) as Button) if same.is_empty() else same[0] as Button).grab_focus()
+	var same := _buttons_reading(focused_text)
+	((menu.get_child(0) as Button) if focused_at == -1 or focused_at >= same.size() else same[focused_at] as Button).grab_focus()
 
 
 ## What the next Match will be like, which the Admin may change: each value between two
@@ -133,6 +136,10 @@ func _change_settings(settings: Dictionary, change: Dictionary) -> void:
 	var next := {"map": settings.map, "roundsToWin": settings.roundsToWin, "roundTime": settings.roundTime}
 	next.merge(change, true)
 	Online.porter.send("porter:updateSettings", next)
+
+
+func _buttons_reading(text: String) -> Array:
+	return _column.find_children("", "Button", true, false).filter(func(button: Button) -> bool: return button.text == text)
 
 
 func _user_card(user: Dictionary, room: Dictionary) -> Control:

@@ -7,6 +7,7 @@ signal quit_to_title
 signal resume_pressed
 
 const PAUSE_ACTION := &"pause"
+const RESUME_DELAY := 0.8
 
 ## Off where the pause is not this screen's own to end: online it belongs to the Room.
 var closes_itself := true
@@ -47,10 +48,11 @@ func _init() -> void:
 
 
 ## Adds a button above the one that quits.
-func add_action(text: String, action: Callable) -> void:
+func add_action(text: String, action: Callable) -> Button:
 	var button := Ui.button(text, action)
 	_quit.add_sibling(button)
 	_quit.get_parent().move_child(button, _quit.get_index())
+	return button
 
 
 ## Says where quitting leads, where that is not the title.
@@ -62,6 +64,10 @@ func open() -> void:
 	get_tree().paused = true
 	visible = true
 	_resume.grab_focus()
+	if not closes_itself:
+		# It opened without this Player asking: a bomb press on its way must not resume the Match.
+		_resume.disabled = true
+		create_tween().tween_callback(func() -> void: _resume.disabled = false).set_delay(RESUME_DELAY)
 
 
 func _unhandled_input(event: InputEvent) -> void:

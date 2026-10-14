@@ -108,6 +108,8 @@ export interface RoundSnapshot {
 export interface MatchState {
   /** The name of each Player's User. A User that is not here watches. */
   players: string[];
+  /** The Players whose User left the Room: out of the Match, whoever comes in under their name. */
+  gone: number[];
   wins: number[];
   bombsPlaced: number[];
   cratesDestroyed: number[];
@@ -142,12 +144,22 @@ export type Bombercat = {
   settings: Settings;
   state: MatchState;
   userData: object;
-  client: { input: Input; meow: undefined; togglePause: undefined };
+  client: {
+    input: Input;
+    meow: undefined;
+    /** Stop the Match for everyone, and set it going again. Either does nothing when it already is so. */
+    pause: undefined;
+    resume: undefined;
+    /** Asks for `synced`: a client that starts drawing a Round the others are already in. */
+    sync: undefined;
+  };
   server: {
     /** A Round is about to start, after a countdown: the whole state, which replaces the client's. */
     roundStarted: MatchState;
     /** A Round has ended: the whole state again, with the Round counted. */
     scored: MatchState;
+    /** The whole state as it is now, to the one User that asked for it. */
+    synced: MatchState;
     moved: Moved;
     happened: RoundEvent[];
     meowed: { player: number };
@@ -155,7 +167,7 @@ export type Bombercat = {
   pauseReason: null;
   /** `winner` is a Player index, or null when the Match was left without one. */
   endReason: { winner: number | null };
-  rejectReason: 'invalidSettings' | 'tooManyUsers' | 'notAPlayer';
+  rejectReason: 'invalidSettings' | 'tooManyUsers' | 'tooFewUsers' | 'notAPlayer';
 };
 
 export type Games = { bombercat: Bombercat };
@@ -170,8 +182,8 @@ class MatchSettings implements Settings {
   roundsToWin = balance.roundsToWin;
   roundTime = balance.roundTime;
 
-  set(settings: Settings) {
-    Object.assign(this, settings);
+  set({ map, roundsToWin, roundTime }: Settings) {
+    Object.assign(this, { map, roundsToWin, roundTime }); // and nothing else a client may have sent with them
   }
 }
 
@@ -182,6 +194,7 @@ export const bombercat = {
   createSettings: () => new MatchSettings(),
   createState: (): MatchState => ({
     players: [],
+    gone: [],
     wins: [],
     bombsPlaced: [],
     cratesDestroyed: [],

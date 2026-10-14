@@ -14,6 +14,7 @@ const porter = createPorter<Games, Profile>({
     bombercat: defineGame<Games, 'bombercat'>(bombercat, {
       roundStarted: (game, state) => ({ ...game, state }),
       scored: (game, state) => ({ ...game, state }),
+      synced: (game, state) => ({ ...game, state }),
     }),
   },
 });

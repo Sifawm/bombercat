@@ -15,6 +15,8 @@ var _picks: Array[int]
 var _room_screen := ""
 ## Whether the User chose to leave the result of the last Match for the Waiting Room.
 var _result_left := false
+## Whether the result on screen was drawn for the Admin, who alone may ask for a Rematch.
+var _result_for_admin := false
 
 
 func _ready() -> void:
@@ -32,6 +34,7 @@ func _ready() -> void:
 		return _show_title()
 	Online.porter.connection_changed.connect(_on_connection_changed)
 	Online.porter.game_changed.connect(_show_room_screen.unbind(1))
+	Online.porter.room_changed.connect(_show_room_screen.unbind(1))
 	# A reloaded page goes back to its Room, and an invite link goes straight to its door.
 	if Online.porter.resume() or Online.room_in_address() != "":
 		_show_online_entry()
@@ -86,6 +89,7 @@ func _on_connection_changed(connection: Dictionary) -> void:
 		_show_room_screen()
 	elif connection.status == "closed" and _room_screen != "":
 		_room_screen = ""
+		_result_left = false
 		get_tree().paused = false
 		if not Online.unreachable():  # its Room may still be there to come back to
 			Online.set_room_in_address("")
@@ -107,9 +111,12 @@ func _show_room_screen() -> void:
 			_result_left = false
 		elif status == "ended" and not _result_left:
 			wanted = "result"
-	if wanted == _room_screen:
+	var is_admin: bool = Online.porter.room.isAdmin
+	# The result is drawn again for a User that becomes the Admin while looking at it.
+	if wanted == _room_screen and not (wanted == "result" and is_admin != _result_for_admin):
 		return
 	_room_screen = wanted
+	_result_for_admin = is_admin
 	get_tree().paused = false
 	match wanted:
 		"match":

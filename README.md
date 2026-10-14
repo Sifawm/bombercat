@@ -65,7 +65,8 @@ have one source, the Godot project: `game/tools/export_shared.gd` writes them as
 `game/addons/porter` is a copy of Porter's addon for Godot; `pnpm addon` refreshes it.
 
 On the client, `game/online/` holds the Round and the Match as the server tells them
-(`RemoteRound`, `RemoteMatch`), which the Round view draws as it draws a local one.
+(`RemoteRound`, `RemoteMatch`), which the Round view draws as it draws a local one. It sits beside the
+three layers: it depends on the rules, and only the presentation depends on it.
 
 ## Exporting
 

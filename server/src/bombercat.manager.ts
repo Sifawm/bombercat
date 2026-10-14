@@ -45,6 +45,8 @@ interface Memory {
   applied: number[];
   /** The Players whose User left the Room. */
   gone: Set<number>;
+  /** By Player index: when its last meow was, on the clock. */
+  meowed: number[];
 }
 
 type Ctx = GameContext<Games, typeof bombercat, Memory>;
@@ -60,6 +62,8 @@ export const pacing = {
 
 /** Inputs a Player may have waiting. One more and the oldest is dropped, so a Cat never lags far behind its keys. */
 const MAX_WAITING = 3;
+/** Milliseconds between two meows of the same Cat that the Room hears. */
+const MEOW_EVERY = 400;
 const STOP: Vec = { x: 0, y: 0 };
 const SYMBOLS = { wall: '#', crate: 'x', floor: '.' };
 
@@ -87,13 +91,17 @@ export class BombercatManager
   }
 
   createMemory(): Memory {
-    return { match: null, phase: 'over', paused: false, inputs: [], held: [], applied: [], gone: new Set() };
+    return { match: null, phase: 'over', paused: false, inputs: [], held: [], applied: [], gone: new Set(), meowed: [] };
   }
 
-  /** Everyone in the Room plays, so the Room must fit on the Map. */
+  /**
+   * Everyone connected plays, so they must fit on the Map and be enough for a Match. Porter's own
+   * minimum also counts a User whose connection dropped, which would not play.
+   */
   canStart(ctx: Ctx) {
     const { rows } = maps[ctx.game.settings.map];
     if (ctx.room.connected.length > mapFromRows(rows).spawnPoints.length) throw ctx.reject('tooManyUsers');
+    if (ctx.room.connected.length < bombercat.minPlayers) throw ctx.reject('tooFewUsers');
   }
 
   onStart(ctx: Ctx) {
@@ -172,13 +180,14 @@ export class BombercatManager
     const player = players.indexOf(user.name);
     if (player === -1 || memory.match === null) return;
     memory.gone.add(player);
+    ctx.game.state.gone = [...memory.gone];
     memory.match.currentRound.forfeit(player);
     if (players.length - memory.gone.size < 2) ctx.endMatch({ winner: null });
   }
 
   @On('input', isInput)
   input(ctx: Ctx, input: Input, user: MatchUser) {
-    const waiting = ctx.memory.inputs[ctx.game.state.players.indexOf(user.name)];
+    const waiting = ctx.memory.inputs[this.playerOf(ctx, user)];
     if (waiting === undefined || ctx.memory.phase !== 'playing') return;
     waiting.push(input);
     if (waiting.length <= MAX_WAITING) return;
@@ -187,20 +196,40 @@ export class BombercatManager
   }
 
   /** Any Player, and the Admin, may stop the Match for everyone and set it going again. */
-  @On('togglePause')
-  togglePause(ctx: Ctx, _data: undefined, user: MatchUser) {
-    const player = ctx.game.state.players.indexOf(user.name);
-    const plays = player !== -1 && !ctx.memory.gone.has(player);
-    if (!plays && user.name !== ctx.room.admin) throw ctx.reject('notAPlayer');
-    if (ctx.memory.paused) ctx.continueMatch();
-    else ctx.pauseMatch(null);
+  @On('pause')
+  pause(ctx: Ctx, _data: undefined, user: MatchUser) {
+    this.mayPause(ctx, user);
+    ctx.pauseMatch(null);
   }
 
-  /** A meow is for show only. */
+  @On('resume')
+  resume(ctx: Ctx, _data: undefined, user: MatchUser) {
+    this.mayPause(ctx, user);
+    ctx.continueMatch();
+  }
+
+  /** A meow is for show only, and a Cat has only so many in it. */
   @On('meow')
   meow(ctx: Ctx, _data: undefined, user: MatchUser) {
+    const player = this.playerOf(ctx, user);
+    if (player === -1 || Date.now() - (ctx.memory.meowed[player] ?? 0) < MEOW_EVERY) return;
+    ctx.memory.meowed[player] = Date.now();
+    ctx.room.broadcast('meowed', { player });
+  }
+
+  @On('sync')
+  sync(ctx: Ctx, _data: undefined, user: MatchUser) {
+    user.send('synced', ctx.game.state);
+  }
+
+  /** The Player a User is in this Match, or -1: it watches, or it took the name of a Player that left. */
+  private playerOf(ctx: Ctx, user: MatchUser): number {
     const player = ctx.game.state.players.indexOf(user.name);
-    if (player !== -1) ctx.room.broadcast('meowed', { player });
+    return ctx.memory.gone.has(player) ? -1 : player;
+  }
+
+  private mayPause(ctx: Ctx, user: MatchUser) {
+    if (this.playerOf(ctx, user) === -1 && user.name !== ctx.room.admin) throw ctx.reject('notAPlayer');
   }
 
   private startRound(ctx: Ctx) {
@@ -221,6 +250,7 @@ export class BombercatManager
   private writeState(ctx: Ctx) {
     const match = ctx.memory.match!;
     const state: Omit<MatchState, 'players'> = {
+      gone: [...ctx.memory.gone],
       wins: [...match.wins],
       bombsPlaced: [...match.bombsPlaced],
       cratesDestroyed: [...match.cratesDestroyed],

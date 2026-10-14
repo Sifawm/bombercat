@@ -44,6 +44,7 @@ function client() {
       bombercat: defineGame<Games, 'bombercat'>(bombercat, {
         roundStarted: (game, state) => ({ ...game, state }),
         scored: (game, state) => ({ ...game, state }),
+        synced: (game, state) => ({ ...game, state }),
       }),
     },
   });
@@ -164,17 +165,18 @@ test('any Player pauses the Match and sets it going again; a User that only watc
   const [bea] = rest;
   ana.send('porter:startMatch');
   await until(bea, () => status(bea) === 'running');
-  bea.send('togglePause');
+  bea.send('pause');
+  bea.send('pause'); // as when two Players ask at once: it stays paused
   await until(ana, () => status(ana) === 'paused');
-  bea.send('togglePause');
+  bea.send('resume');
   await until(ana, () => status(ana) === 'running');
 
   const cleo = await join('Cleo', roomId); // it finds the Match as it is, and its Cats
   expect(state(cleo).round!.cats).toHaveLength(2);
   const rejected = new Promise((resolve) => cleo.on('porter:messageRejected', resolve));
-  cleo.send('togglePause');
-  expect(await rejected).toEqual({ rejected: 'togglePause', reason: { code: 'game', reason: 'notAPlayer' } });
-  ana.send('togglePause'); // the Admin plays too
+  cleo.send('pause');
+  expect(await rejected).toEqual({ rejected: 'pause', reason: { code: 'game', reason: 'notAPlayer' } });
+  ana.send('pause'); // the Admin plays too
   await until(cleo, () => status(cleo) === 'paused');
 });
 
@@ -200,9 +202,12 @@ test('the Admin changes the settings within their limits', async () => {
   const rejected = new Promise((resolve) => ana.on('porter:messageRejected', resolve));
   ana.send('porter:updateSettings', { map: 'attic', roundsToWin: 2, roundTime: 120 } as never);
   expect(await rejected).toMatchObject({ rejected: 'porter:updateSettings', reason: { code: 'game', reason: 'invalidSettings' } });
-  ana.send('porter:updateSettings', { map: 'backyard', roundsToWin: 3, roundTime: 90 });
+  // Whatever else comes with them is left out, a `set` that would replace the settings' own included.
+  ana.send('porter:updateSettings', { map: 'backyard', roundsToWin: 3, roundTime: 90, set: 1 } as never);
   await until(ana, () => ana.game('bombercat').settings.roundsToWin === 3);
-  expect(ana.game('bombercat').settings).toMatchObject({ map: 'backyard', roundsToWin: 3, roundTime: 90 });
+  expect(ana.game('bombercat').settings).toEqual({ map: 'backyard', roundsToWin: 3, roundTime: 90 });
+  ana.send('porter:updateSettings', { map: 'backyard', roundsToWin: 4, roundTime: 90 });
+  await until(ana, () => ana.game('bombercat').settings.roundsToWin === 4);
 });
 
 test('the server gives the page and Porter from the same origin', async () => {
@@ -211,4 +216,43 @@ test('the server gives the page and Porter from the same origin', async () => {
   expect(await page.text()).toBe('<title>BomberCat</title>');
   expect((await fetch(`http://127.0.0.1:${port}/../../etc/passwd`)).status).toBe(404);
   expect(await client().roomExists('nosuchroom')).toBe(false);
+});
+
+test('a client that starts drawing a Round late asks for it as it is, and a name left behind plays no more', async () => {
+  const { ana, rest } = await room('Bea', 'Cleo');
+  ana.send('porter:startMatch');
+  await new Promise((resolve) => ana.on('moved', resolve));
+  ana.send('porter:kickUser', { name: 'Cleo' });
+  await until(rest[1], () => rest[1].connection.status === 'closed');
+  await new Promise((resolve) => ana.on('moved', resolve)); // the Tick in which Cleo's Cat goes
+
+  // Someone else comes in as Cleo: it watches, and what it asks of Cleo's Cat goes nowhere.
+  const other = await join('Cleo', ana.room!.id);
+  const synced = new Promise((resolve) => other.on('synced', resolve));
+  other.send('sync');
+  expect(await synced).toMatchObject({ players: ['Ana', 'Bea', 'Cleo'], gone: [2] });
+  expect(state(other).round!.cats[2].alive).toBe(false);
+  const rejected = new Promise((resolve) => other.on('porter:messageRejected', resolve));
+  other.send('pause');
+  expect(await rejected).toMatchObject({ rejected: 'pause', reason: { reason: 'notAPlayer' } });
+});
+
+test('a Match does not start with one User connected, whoever else is on its way back', async () => {
+  const ana = client();
+  const roomId = await createRoom(ana);
+  // Bea, on a connection of its own that then drops: it stays in the Room, reconnecting.
+  const login = await fetch(`http://127.0.0.1:${port}/porter/login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'Bea', profile: { cat: 1 }, roomId }),
+  });
+  const { token } = (await login.json()) as { token: string };
+  const socket = new WebSocket(`ws://127.0.0.1:${port}/porter/ws?token=${token}`);
+  await until(ana, () => ana.room!.users.length === 2);
+  socket.close();
+  await until(ana, () => ana.room!.users[1].status === 'reconnecting');
+
+  const rejected = new Promise((resolve) => ana.on('porter:messageRejected', resolve));
+  ana.send('porter:startMatch');
+  expect(await rejected).toEqual({ rejected: 'porter:startMatch', reason: { code: 'game', reason: 'tooFewUsers' } });
 });
