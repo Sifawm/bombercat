@@ -104,10 +104,14 @@ func _physics_process(delta: float) -> void:
 		_count_down(left)
 		return
 	_clear_go()
-	if _own != -1 and _round.cats[_own].alive:
-		_controllers[_own].drive(_round, _own)
-		Online.porter.send("input", _remote().take_input(_own))
+	if _own == -1 or not _round.cats[_own].alive:
+		_round.step(delta)
+		return
+	_controllers[_own].drive(_round, _own)
+	Online.porter.send("input", _remote().take_input(_own))
+	var before := _round.cats[_own].position
 	_round.step(delta)
+	_cat_moving[_own] = _round.cats[_own].position != before
 
 
 func _process(delta: float) -> void:
@@ -125,6 +129,7 @@ func _start_round() -> void:
 		_countdown_left = 0.0  # joined with the Round already going
 	for player in _cat_views.size():
 		_cat_views[player].visible = _round.cats[player].alive
+	_remote().predicted = _own
 	_remote().announce()
 
 
@@ -149,7 +154,8 @@ func _on_moved(moved: Dictionary) -> void:
 		before.append(cat.position)
 	_remote().apply_moved(moved)
 	for player in _round.cats.size():
-		_cat_moving[player] = _round.cats[player].position != before[player]
+		if player != _own:  # its own Cat moves when its Inputs are walked
+			_cat_moving[player] = _round.cats[player].position != before[player]
 
 
 func _on_meowed(meowed: Dictionary) -> void:

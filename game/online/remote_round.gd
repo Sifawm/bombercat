@@ -4,14 +4,27 @@ extends Round
 ## the server says where everything is and what happened, and this keeps the Board, the Cats
 ## and the Bombs as it says, emitting the signals a Round emits. Commands are not carried
 ## out here; they become the Input sent to the server on each step.
+##
+## The one thing it does not wait for is the walk of this client's own Cat (ADR 0004). Each
+## Input moves that Cat at once, with the Movement the server will move it with. When the
+## server says where the Cat was after an Input, the Cat is put there and the Inputs sent
+## since are walked again; on the same Board that gives where it already was.
 
 const CURSES := "res://rules/curses/%s.gd"
 
 ## The Tile of the Powerup most recently collected: by then its Cat may be elsewhere.
 var collected_tile: Vector2i
 
+## The Player whose Cat this client moves ahead of the server, or -1.
+var predicted := -1
+
 var _bomb_wanted := false
 var _inputs_sent := 0
+## The Inputs of `predicted` the server has not answered yet: each its number and its move.
+var _unconfirmed: Array[Dictionary] = []
+## Whether the newest of them is still to be walked, at the next step.
+var _input_to_walk := false
+var _step_seconds := 1.0 / 60.0
 
 
 ## `snapshot` is the Round as the server's state gives it.
@@ -73,13 +86,21 @@ func take_input(player: int) -> Dictionary:
 	_inputs_sent += 1
 	var input := {"seq": _inputs_sent, "x": _moves[player].x, "y": _moves[player].y, "bomb": _bomb_wanted}
 	_bomb_wanted = false
+	if player == predicted:
+		_unconfirmed.append({"seq": _inputs_sent, "move": _moves[player]})
+		_input_to_walk = true
 	return input
 
 
-## Only what runs down between two words from the server, so that it shows smoothly.
+## The walk of the predicted Cat for the Input just taken, and what runs down between two
+## words from the server, so that it shows smoothly.
 func step(delta: float) -> void:
 	if finished:
 		return
+	_step_seconds = delta
+	if _input_to_walk:
+		_input_to_walk = false
+		_walk(cats[predicted], _unconfirmed.back().move)
 	for bomb in bombs:
 		bomb.fuse_left -= delta
 	for cat in cats:
@@ -93,6 +114,11 @@ func apply_moved(moved: Dictionary) -> void:
 		var known: Dictionary = moved.cats[player]
 		cats[player].position = Vector2(known.x, known.y)
 		cats[player].facing = Vector2i(int(known.fx), int(known.fy))
+	if predicted != -1:
+		var answered := int(moved.cats[predicted].seq)
+		_unconfirmed = _unconfirmed.filter(func(input: Dictionary) -> bool: return input.seq > answered)
+		for index in _unconfirmed.size() - int(_input_to_walk):
+			_walk(cats[predicted], _unconfirmed[index].move)
 	for bomb in bombs:
 		bomb.slide = Vector2i.ZERO
 		bomb.slide_progress = 0.0
@@ -169,6 +195,17 @@ func apply_events(events: Array) -> void:
 			"roundEnded":
 				finished = true
 				round_ended.emit(int(event.winner))
+
+
+## One step of a Cat's walk, as `Round.step` walks it.
+func _walk(cat: CatState, move: Vector2i) -> void:
+	if not cat.alive:
+		return
+	var speed := cat.speed
+	if cat.curse != null:
+		move = cat.curse.redirect(move)
+		speed *= cat.curse.speed_factor(config)
+	Movement.move(cat, board, move, speed * _step_seconds, config.corner_assist)
 
 
 func _add_bomb(tile: Vector2i, owner: int, bomb_range: int) -> Bomb:
