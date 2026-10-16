@@ -2,7 +2,8 @@ extends SceneTree
 ## Writes what the online server needs from this project as JSON into shared/src: the balance
 ## values and every Map (ADR 0003). The server cannot read scenes or resources, so this
 ## project stays their source and the files are versioned. Run it through ./run_tests.sh,
-## which fails when they are stale.
+## which fails when they are stale. A Map also carries its `look` for art/render_map.py,
+## which the server ignores.
 
 const TARGET := "res://../shared/src/"
 const SYMBOLS: Dictionary[MapData.Tile, String] = {
@@ -26,7 +27,9 @@ func _init() -> void:
 	for file in DirAccess.get_files_at("res://maps"):
 		if file.ends_with(".tscn"):
 			var node: MapScene = (load("res://maps/" + file) as PackedScene).instantiate()
-			_write("maps/" + file.get_basename() + ".json", _described(node.to_map_data()))
+			var described := _described(node.to_map_data())
+			described.look = _look(node)
+			_write("maps/" + file.get_basename() + ".json", described)
 			node.free()
 	quit()
 
@@ -40,6 +43,25 @@ func _described(map: MapData) -> Dictionary:
 			row += "S" if map.spawn_points.has(Vector2i(x, y)) else SYMBOLS[map.tile_at(Vector2i(x, y))]
 		rows.append(row)
 	return {"rows": rows, "powerupPool": map.powerup_pool}
+
+
+## What is painted on each Tile and how it is turned, the Floor, and the decoration that is
+## not a Tile: the models by name, at Tile coordinates, turned in degrees about the vertical.
+func _look(node: MapScene) -> Dictionary:
+	var origin := node.tile_to_local(Vector2.ZERO)
+	var cells := []
+	for cell in node.get_used_cells():
+		var turn := node.get_basis_with_orthogonal_index(node.get_cell_item_orientation(cell)).get_euler().y
+		var tile := Vector2i(Vector2(node.map_to_local(cell).x - origin.x, node.map_to_local(cell).z - origin.z).round())
+		cells.append({"x": tile.x, "y": tile.y, "model": MapPalette.MODELS[node.get_cell_item(cell)], "turn": roundi(rad_to_deg(turn))})
+	cells.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return [a.y, a.x] < [b.y, b.x])
+	var decor := []
+	for child in node.get_children():
+		if child is Node3D and child.scene_file_path.ends_with(".glb"):
+			var at: Vector3 = (child as Node3D).position - origin
+			decor.append({"x": at.x, "y": at.z, "model": child.scene_file_path.get_file().get_basename(),
+				"turn": roundi(rad_to_deg((child as Node3D).rotation.y))})
+	return {"floor": node.floor_models, "cells": cells, "decor": decor}
 
 
 func _write(path: String, data: Dictionary) -> void:
