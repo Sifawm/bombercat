@@ -88,13 +88,18 @@ versioned.
 Maps are GridMap scenes in `game/maps/` (see [ADR 0001](docs/adr/0001-map-studio-in-godot-editor.md)).
 To make or edit one, open it in the Godot editor and select its root node:
 
-- **Paint** Walls (`wall_brick`, `wall_brick_low`, `wall_pillar`), Crates and Spawn Points from the
-  GridMap palette, on floor 0. Empty Tiles inside the painted area are Floor, laid automatically.
+- **Paint** Walls, Crates and Spawn Points from the GridMap palette, on floor 0. Every Wall model is
+  the same Wall to the rules (`wall_brick`, `wall_room`, `sofa_left`, `bookshelf`...); rotate a piece
+  with the GridMap's rotation keys. Empty Tiles inside the painted area are Floor, laid automatically.
+- **Look**: the root node's `floor_models` (the two Floor models of the checkerboard) and
+  `background` (what is seen around the Map). Decoration that is not a Tile, such as the rug of
+  `living_room`, is a child node of the root.
 - **Powerup Pool**: the root node's `powerup_pool` property in the inspector.
 - **Validation**: problems appear as the yellow warning icon next to the root node.
 - **Test-play**: press F6 (run current scene) with the Map open; it plays Matches on that Map.
 
-A new Map is a new scene whose root is a GridMap with the `maps/map_scene.gd` script.
+A new Map is a new scene whose root is a GridMap with the `maps/map_scene.gd` script. The Maps that
+ship are described in [docs/maps.md](docs/maps.md).
 
 ## Regenerating models
 

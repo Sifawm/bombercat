@@ -73,7 +73,7 @@ async function createRoom(admin: Porter<Games, Profile>) {
   return created.roomId;
 }
 
-test('a Room takes four Users, each with a Cat, and the Admin runs it', async () => {
+test('a Room takes five Users, each with a Cat, and the Admin runs it', async () => {
   const [ana, bea] = [client(), client()];
   const roomId = await createRoom(ana);
 
@@ -85,7 +85,9 @@ test('a Room takes four Users, each with a Cat, and the Admin runs it', async ()
   expect(bea.room!.users.map((user) => user.profile)).toEqual([{ cat: 0 }, { cat: 1 }, { cat: 2 }]);
 
   expect(await client().login({ name: 'Dani', profile: { cat: 2 }, roomId })).toMatchObject({ ok: true });
-  expect(await client().login({ name: 'Eva', profile: { cat: 3 }, roomId })).toEqual({ ok: false, reason: 'roomFull' });
+  expect(await client().login({ name: 'Eva', profile: { cat: 3 }, roomId })).toMatchObject({ ok: true });
+  // A sixth finds no Cat free before it finds the Room full.
+  expect(await client().login({ name: 'Fran', profile: { cat: 4 }, roomId })).toMatchObject({ ok: false });
 
   ana.send('porter:lockRoom', { locked: true });
   await until(bea, () => bea.room!.locked);

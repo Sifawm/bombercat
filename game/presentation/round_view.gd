@@ -237,6 +237,7 @@ func _start_round() -> void:
 
 	_map_node = map_scene.instantiate()
 	_world.add_child(_map_node)
+	$WorldEnvironment.environment.background_color = _map_node.background
 	var map := _map_node.to_map_data()
 	_map_node.prepare_for_play()
 	_frame_map(map.size)

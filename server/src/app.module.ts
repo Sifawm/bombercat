@@ -10,8 +10,8 @@ export class GamesModule {}
   imports: [
     PorterModule.forRoot<Games>({
       initialGame: 'bombercat',
-      // ponytail: the Spawn Points of `backyard`, the only Map. Raise it with the first larger Map.
-      capacity: 4,
+      // Every Cat: no two Users bring the same one. `living_room` has a Spawn Point for each.
+      capacity: 5,
       gracePeriod: 15_000,
       validateProfile: isFreeProfile,
       fallbackProfile: freeProfile,

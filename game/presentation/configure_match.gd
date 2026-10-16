@@ -214,7 +214,8 @@ func _render() -> void:
 	var facts := _facts(map)
 	_map_image.texture = _map_texture(map)
 	_map_name.text = map.capitalize()
-	_map_meta.text = "%d × %d · up to %d players" % [facts[0].x, facts[0].y, facts[1]]
+	# No two Players bring the same Cat, so a Map with more Spawn Points than Cats seats them all.
+	_map_meta.text = "%d × %d · up to %d players" % [facts[0].x, facts[0].y, mini(facts[1], Roster.CATS.size())]
 	for arrow: Button in [_previous, _next]:
 		arrow.visible = admin
 		arrow.disabled = _maps.size() < 2

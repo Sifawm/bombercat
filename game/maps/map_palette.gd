@@ -4,7 +4,10 @@ extends RefCounted
 ## The meshes a Map is painted with in Map Studio, built from the models each time the
 ## editor or the game starts (restart the editor after re-exporting a model). An Item's number is what a Map scene stores in each Tile: only ever append.
 
-enum Item { WALL_BRICK, WALL_BRICK_LOW, WALL_PILLAR, CRATE, SPAWN_MARKER }
+enum Item {
+	WALL_BRICK, WALL_BRICK_LOW, WALL_PILLAR, CRATE, SPAWN_MARKER,
+	WALL_ROOM, WALL_ROOM_LOW, SOFA_LEFT, SOFA_MIDDLE, SOFA_RIGHT, BOOKSHELF, CAT_TREE, TABLE_CORNER,
+}
 
 const MODELS: Dictionary[Item, String] = {
 	Item.WALL_BRICK: "wall_brick",
@@ -12,8 +15,20 @@ const MODELS: Dictionary[Item, String] = {
 	Item.WALL_PILLAR: "wall_pillar",
 	Item.CRATE: "crate",
 	Item.SPAWN_MARKER: "spawn_marker",
+	Item.WALL_ROOM: "wall_room",
+	Item.WALL_ROOM_LOW: "wall_room_low",
+	Item.SOFA_LEFT: "sofa_left",
+	Item.SOFA_MIDDLE: "sofa_middle",
+	Item.SOFA_RIGHT: "sofa_right",
+	Item.BOOKSHELF: "bookshelf",
+	Item.CAT_TREE: "cat_tree",
+	Item.TABLE_CORNER: "table_corner",
 }
-const WALLS: Array[Item] = [Item.WALL_BRICK, Item.WALL_BRICK_LOW, Item.WALL_PILLAR]
+const WALLS: Array[Item] = [
+	Item.WALL_BRICK, Item.WALL_BRICK_LOW, Item.WALL_PILLAR,
+	Item.WALL_ROOM, Item.WALL_ROOM_LOW, Item.SOFA_LEFT, Item.SOFA_MIDDLE, Item.SOFA_RIGHT, Item.BOOKSHELF,
+	Item.CAT_TREE, Item.TABLE_CORNER,
+]
 
 static var _library: MeshLibrary
 

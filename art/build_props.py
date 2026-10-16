@@ -290,10 +290,127 @@ def cucumber():
     return p
 
 
+# ---------------------------------------------------------------- living_room: parquet, furniture as Walls.
+# A piece's front faces -Y, which the game shows facing the camera; Map Studio rotates it.
+def parquet(wood, alt):
+    p = Prop()
+    p.box((1, 1, 0.1), (0, 0, -0.07), V(0.33, 0.21, 0.11), bevel=0)
+    for i in range(4):
+        p.box((0.995, 0.245, 0.02), (0, -0.375 + i * 0.25, -0.01), wood if i % 2 == 0 else alt, bevel=0.004)
+    return p
+
+
+def wall_room(h=0.62):
+    """Wallpapered wall with a skirting board and a wooden cap; the low variant does not hide the Tiles behind it."""
+    p = Prop()
+    paper, stripe, board, cap = V(0.36, 0.56, 0.55), V(0.44, 0.65, 0.62), V(0.93, 0.9, 0.84), V(0.27, 0.45, 0.45)
+    p.box((0.96, 0.96, h - 0.07), (0, 0, (h - 0.07) / 2), paper, bevel=0)
+    for d in (-0.3, 0, 0.3):
+        p.box((0.08, 0.97, h - 0.2), (d, 0, (h - 0.2) / 2 + 0.1), stripe, bevel=0)
+        p.box((0.97, 0.08, h - 0.2), (0, d, (h - 0.2) / 2 + 0.1), stripe, bevel=0)
+    p.box((0.98, 0.98, 0.12), (0, 0, 0.06), board, bevel=0.01)
+    p.box((1.0, 1.0, 0.07), (0, 0, h - 0.035), cap, bevel=0.02)
+    return p
+
+
+def sofa(arm):
+    """One seat of a sofa: arm -1 ends it on the left (as seen from the front), 1 on the right, 0 none."""
+    p = Prop()
+    fabric, cushion, foot = V(0.76, 0.26, 0.25), V(0.88, 0.40, 0.36), V(0.35, 0.2, 0.1)
+    p.box((1.0, 0.86, 0.22), (0, 0, 0.15), fabric, bevel=0.02)
+    p.box((1.0, 0.24, 0.38), (0, 0.31, 0.45), fabric, bevel=0.03)
+    left, right = (-0.5 + (0.2 if arm < 0 else 0.02)), (0.5 - (0.2 if arm > 0 else 0.02))
+    p.box((right - left, 0.6, 0.11), ((left + right) / 2, -0.1, 0.31), cushion, bevel=0.03)
+    p.box((right - left, 0.13, 0.26), ((left + right) / 2, 0.14, 0.46), cushion, bevel=0.04)
+    if arm:
+        p.box((0.2, 0.86, 0.24), (arm * 0.4, 0, 0.38), fabric, bevel=0.04)
+        for y in (-0.36, 0.36):
+            p.box((0.08, 0.08, 0.05), (arm * 0.4, y, 0.025), foot, bevel=0.01)
+    return p
+
+
+def bookshelf():
+    import random
+    rnd = random.Random(7)
+    p = Prop()
+    wood, back = V(0.55, 0.35, 0.2), V(0.4, 0.25, 0.14)
+    books = [V(0.85, 0.3, 0.25), V(0.25, 0.45, 0.75), V(0.95, 0.75, 0.25), V(0.35, 0.65, 0.4), V(0.6, 0.4, 0.75)]
+    p.box((0.98, 0.06, 0.72), (0, 0.42, 0.36), back, bevel=0)
+    for s in (-1, 1):
+        p.box((0.06, 0.86, 0.72), (s * 0.46, 0.03, 0.36), wood, bevel=0.01)
+    for z in (0.03, 0.37, 0.71):
+        p.box((0.98, 0.86, 0.05), (0, 0.03, z), wood, bevel=0.01)
+    for shelf in (0.06, 0.4):
+        x = -0.41
+        while x < 0.36:
+            w, h = rnd.uniform(0.06, 0.1), rnd.uniform(0.2, 0.28)
+            p.box((w - 0.01, 0.5, h), (x + w / 2, 0.12, shelf + h / 2), rnd.choice(books), bevel=0.005)
+            x += w
+    # on top, seen from the camera: a lying stack of books and a potted plant
+    for i, c in enumerate(books[:3]):
+        p.box((0.34 - i * 0.04, 0.26, 0.05), (-0.2, 0.05, 0.76 + i * 0.05), c, bevel=0.01)
+    p.cone(V(0.22, 0.02, 0.81), (0.09, 0.09, 0.08), V(0.72, 0.30, 0.14), r2=1.3, seg=12)
+    for i in range(5):
+        a = i * math.tau / 5
+        p.ball(V(0.22 + 0.07 * math.cos(a), 0.02 + 0.07 * math.sin(a), 0.95), (0.06, 0.06, 0.1), V(0.25, 0.65, 0.25), seg=10)
+    return p
+
+
+def cat_tree():
+    p = Prop()
+    carpet, sisal, top, pink = V(0.85, 0.75, 0.6), V(0.78, 0.63, 0.4), V(0.55, 0.4, 0.72), V(0.85, 0.08, 0.35)
+    p.box((0.86, 0.86, 0.08), (0, 0, 0.04), carpet, bevel=0.02)
+    p.cone(V(0, 0, 0.38), (0.09, 0.09, 0.3), sisal, r2=1.0, seg=12)
+    for z in (0.16, 0.26, 0.36, 0.46, 0.56):
+        p.ring(V(0, 0, z), 0.09, 0.012, V(0.66, 0.52, 0.32))
+    p.cone(V(0, 0, 0.7), (0.36, 0.36, 0.04), top, r2=1.0, seg=20)
+    p.tube([V(0.26, -0.12, 0.66), V(0.27, -0.13, 0.55), V(0.27, -0.14, 0.45)], 0.01, pink)
+    p.ball(V(0.27, -0.14, 0.4), (0.06,) * 3, pink)
+    return p
+
+
+def table_corner():
+    """A quarter of a 2 x 2 table under a gingham cloth, its outer corner at -X +Y; four turned ones make the table."""
+    p = Prop()
+    cloth, check, cup = V(0.95, 0.93, 0.86), V(0.86, 0.32, 0.32), V(0.4, 0.6, 0.85)
+    p.box((0.96, 0.96, 0.5), (0.02, -0.02, 0.25), cloth, bevel=0.02)
+    for d in (-0.25, 0.25):
+        p.box((0.12, 0.965, 0.012), (d, -0.02, 0.5), check, bevel=0)
+        p.box((0.965, 0.12, 0.012), (0.02, d, 0.5), check, bevel=0)
+    p.box((0.012, 0.965, 0.08), (-0.462, -0.02, 0.06), check, bevel=0)
+    p.box((0.965, 0.012, 0.08), (0.02, 0.462, 0.06), check, bevel=0)
+    p.disc(V(0.3, -0.3, 0.512), UP, V(0, 1, 0), 0.11, 0.11, V(0.98, 0.98, 0.98))
+    p.cone(V(0.3, -0.3, 0.57), (0.05, 0.05, 0.05), cup, GLOSS, r2=1.2, seg=12)
+    return p
+
+
+def rug():
+    """5 x 5 Tiles of rug, laid over the Floor as decoration; it is not a Tile."""
+    p = Prop()
+    red, gold, blue = V(0.6, 0.16, 0.2), V(0.92, 0.72, 0.3), V(0.2, 0.3, 0.6)
+    p.box((4.8, 4.8, 0.012), (0, 0, 0.006), red, bevel=0)
+    p.box((4.3, 4.3, 0.014), (0, 0, 0.007), gold, bevel=0)
+    p.box((4.0, 4.0, 0.016), (0, 0, 0.008), red, bevel=0)
+    p.disc(V(0, 0, 0.018), UP, V(0, 1, 0), 1.1, 1.1, gold)
+    p.disc(V(0, 0, 0.02), UP, V(0, 1, 0), 0.85, 0.85, blue)
+    for x in (-1.6, 1.6):
+        for y in (-1.6, 1.6):
+            p.disc(V(x, y, 0.018), UP, V(0, 1, 0), 0.25, 0.25, blue)
+    for i in range(24):
+        for y in (-2.45, 2.45):
+            p.box((0.03, 0.1, 0.006), (-2.3 + i * 0.2, y, 0.003), V(0.95, 0.9, 0.8), bevel=0)
+    return p
+
+
 PROPS = [("bomb", bomb()), ("floor_a", floor(V(0.36, 0.62, 0.22))), ("floor_b", floor(V(0.27, 0.52, 0.17))),
          ("wall_pillar", wall_pillar()), ("crate", crate()), ("wall_brick", wall_brick()),
          ("wall_brick_low", wall_brick(1)), ("spawn_marker", spawn_marker()),
          ("yarn_ball", yarn_ball()), ("tuna_can", tuna_can()), ("catnip", catnip()),
-         ("paw_swipe", paw_swipe()), ("nine_lives", nine_lives()), ("cucumber", cucumber())]
+         ("paw_swipe", paw_swipe()), ("nine_lives", nine_lives()), ("cucumber", cucumber()),
+         ("floor_parquet_a", parquet(V(0.50, 0.31, 0.19), V(0.46, 0.28, 0.17))),
+         ("floor_parquet_b", parquet(V(0.42, 0.26, 0.16), V(0.39, 0.24, 0.15))),
+         ("wall_room", wall_room()), ("wall_room_low", wall_room(0.32)),
+         ("sofa_left", sofa(-1)), ("sofa_middle", sofa(0)), ("sofa_right", sofa(1)),
+         ("bookshelf", bookshelf()), ("cat_tree", cat_tree()), ("table_corner", table_corner()), ("rug", rug())]
 for i, (name, prop) in enumerate(PROPS):
     prop.finish(name, i * 1.5)

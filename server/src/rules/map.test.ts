@@ -78,6 +78,15 @@ test('backyard, as the Godot project exports it, is a valid 13 by 11 Map', () =>
   expect(mapProblems(map)).toEqual([]);
 });
 
+test('living_room, as the Godot project exports it, is a valid 17 by 13 Map for six', () => {
+  const map = mapFromRows(maps.living_room.rows, maps.living_room.powerupPool);
+  expect(map.size).toEqual({ x: 17, y: 13 });
+  expect(map.spawnPoints).toHaveLength(6);
+  expect(map.tiles.filter((tile) => tile === 'crate')).toHaveLength(82);
+  expect(map.tiles).toEqual([...map.tiles].reverse()); // point symmetry
+  expect(mapProblems(map)).toEqual([]);
+});
+
 test('the balance values, as the Godot project exports them, are the ones the rules read', () => {
   const tuned: GameConfig = balance;
   expect(Object.keys(tuned).sort()).toEqual(Object.keys(config()).sort());

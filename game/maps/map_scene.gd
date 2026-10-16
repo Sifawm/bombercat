@@ -6,10 +6,13 @@ extends GridMap
 ## the only script that knows Maps are GridMaps; the rules get plain MapData from it.
 
 const TEST_PLAY := "res://map_studio/test_play.gd"
-const FLOOR_MODELS: Array[String] = ["floor_a", "floor_b"]
 
 ## How many of each Powerup (by id) hide in the Crates every Round.
 @export var powerup_pool: Dictionary[StringName, int] = {}
+## The models the Floor is laid with, alternating like a checkerboard.
+@export var floor_models: Array[String] = ["floor_a", "floor_b"]
+## What is seen around the Map in a Round.
+@export var background := Color(0.3, 0.5, 0.85)
 
 var _painted_hash := 0
 ## The painted area as of the last `to_map_data` or floor refresh; Tile (0, 0) is its corner.
@@ -34,7 +37,7 @@ func _ready() -> void:
 ## every frame; fine for Maps this small, throttle it if Maps ever get large.
 func _process(_delta: float) -> void:
 	var cells := get_used_cells()
-	var painted := hash([cells, cells.map(get_cell_item), powerup_pool])
+	var painted := hash([cells, cells.map(get_cell_item), powerup_pool, floor_models])
 	if painted != _painted_hash:
 		_painted_hash = painted
 		_lay_floor()
@@ -103,15 +106,15 @@ func _lay_floor() -> void:
 			node.queue_free()
 	_area = _painted_area()
 	var area := _area
-	for tone in FLOOR_MODELS.size():
+	for tone in floor_models.size():
 		var tiles: Array[Vector2i] = []
 		for y in area.size.y:
 			for x in area.size.x:
-				if (x + y) % FLOOR_MODELS.size() == tone:
+				if (x + y) % floor_models.size() == tone:
 					tiles.append(Vector2i(x, y))
 		var multimesh := MultiMesh.new()
 		multimesh.transform_format = MultiMesh.TRANSFORM_3D
-		multimesh.mesh = MapPalette.mesh_of(FLOOR_MODELS[tone])
+		multimesh.mesh = MapPalette.mesh_of(floor_models[tone])
 		multimesh.instance_count = tiles.size()
 		for index in tiles.size():
 			multimesh.set_instance_transform(index, Transform3D(Basis.IDENTITY, tile_to_local(Vector2(tiles[index]))))
