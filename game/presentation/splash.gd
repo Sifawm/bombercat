@@ -9,18 +9,10 @@ const MIN_SECONDS := 2.0
 ## The share of the bar the page filled while the game downloaded.
 const WEB_SHARE := 0.8
 const FADE_SECONDS := 0.15  # as Main's
-const INK := Color("2a1b3d")
-const FRAME := Vector2(1920, 1080)
-## The clouds of the design, in the frame; each drifts right at a twelfth of its width a second.
-const CLOUDS: Array[Rect2] = [
-	Rect2(120, 120, 352, 132), Rect2(1500, 80, 288, 108), Rect2(1640, 560, 224, 84),
-	Rect2(40, 640, 192, 72), Rect2(760, 40, 160, 60),
-]
 const BAR_WIDTH := 640.0
 const BAR_INSET := 8.0
 
-var _frame := Control.new()
-var _clouds: Array[TextureRect] = []
+var _frame: Control
 var _burst: TextureRect
 var _bomb: TextureRect
 var _spark := TextureRect.new()
@@ -40,19 +32,8 @@ var _leaving := false
 
 func _init() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var sky := _image("sky", Rect2(Vector2.ZERO, FRAME), self)
-	sky.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	sky.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	for cloud: Rect2 in CLOUDS:
-		var node := _image("cloud", cloud, self)
-		node.modulate.a = 0.9
-		_clouds.append(node)
-	_frame.set_anchors_preset(Control.PRESET_CENTER)
-	_frame.offset_left = -FRAME.x / 2.0
-	_frame.offset_top = -FRAME.y / 2.0
-	_frame.offset_right = FRAME.x / 2.0
-	_frame.offset_bottom = FRAME.y / 2.0
-	add_child(_frame)
+	add_child(SkyBackdrop.new())
+	_frame = Ui.frame(self)
 	_burst = _image("burst", Rect2(640, 46, 640, 640), _frame)
 	_bomb = _image("bomb", Rect2(807, 156, 253, 400), _frame)
 	_bomb.pivot_offset = Vector2(_bomb.size.x / 2.0, _bomb.size.y)  # sways on its bottom
@@ -72,9 +53,6 @@ func _ready() -> void:
 	var relayed := OS.has_feature("web") and bool(JavaScriptBridge.eval("typeof hideSplash == 'function'"))
 	if OS.has_feature("web"):
 		_clock = float(JavaScriptBridge.eval("performance.now()")) / 1000.0
-	var top := (size.y - FRAME.y) / 2.0
-	for i in _clouds.size():  # from where they stand in the design, whatever the window
-		_clouds[i].position = CLOUDS[i].position + Vector2((size.x - FRAME.x) / 2.0, top)
 	if not relayed:
 		return _intro()
 	_bar_start = WEB_SHARE
@@ -86,12 +64,6 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_clock += delta
-	for i in _clouds.size():
-		var cloud := _clouds[i]
-		cloud.position.x += cloud.size.x / 12.0 * delta
-		if cloud.position.x > size.x:
-			cloud.position.x = -cloud.size.x
-		cloud.position.y = (size.y - FRAME.y) / 2.0 + CLOUDS[i].position.y
 	_burst.rotation += 0.2 * delta
 	_spark.scale = Vector2.ONE * (0.85 + 0.3 * sin(_clock * 23.0) * sin(_clock * 7.1))
 	_spark.modulate.a = 0.7 + 0.3 * sin(_clock * 31.0)
@@ -143,14 +115,7 @@ func _intro() -> void:
 
 
 func _image(file: String, rect: Rect2, parent: Control) -> TextureRect:
-	var node := TextureRect.new()
-	node.texture = load(FOLDER + file + ".png")
-	node.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	node.position = rect.position
-	node.size = rect.size
-	node.pivot_offset = rect.size / 2.0
-	parent.add_child(node)
-	return node
+	return Ui.picture(FOLDER + file + ".png", rect, parent)
 
 
 ## A flickering glow on the fuse's spark, which is drawn in the bomb's picture.
@@ -173,11 +138,11 @@ func _add_spark() -> void:
 
 
 func _add_bar() -> void:
-	_panel(INK, 24, Rect2(640, 800, BAR_WIDTH, 48), _frame)  # the hard shadow under the track
-	var track := _panel(Color("fff6e5"), 24, Rect2(640, 792, BAR_WIDTH, 48), _frame)
+	_panel(Ui.INK, 24, Rect2(640, 800, BAR_WIDTH, 48), _frame)  # the hard shadow under the track
+	var track := _panel(Ui.CREAM, 24, Rect2(640, 792, BAR_WIDTH, 48), _frame)
 	(track.get_theme_stylebox("panel") as StyleBoxFlat).set_border_width_all(6)
-	(track.get_theme_stylebox("panel") as StyleBoxFlat).border_color = INK
-	_fill = _panel(Color("ffc93c"), 16, Rect2(BAR_INSET, BAR_INSET, 32, 32), track)
+	(track.get_theme_stylebox("panel") as StyleBoxFlat).border_color = Ui.INK
+	_fill = _panel(Ui.YELLOW, 16, Rect2(BAR_INSET, BAR_INSET, 32, 32), track)
 	_fill.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW  # the shine keeps to the fill
 	_shine.polygon = PackedVector2Array([Vector2(16, 0), Vector2(56, 0), Vector2(40, 32), Vector2(0, 32)])
 	_shine.color = Color(1.0, 1.0, 1.0, 0.45)
@@ -200,7 +165,7 @@ func _add_text(node: Label, text: String, font_size: int, rect: Rect2) -> void:
 	node.text = text
 	node.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	node.add_theme_font_size_override("font_size", font_size)
-	node.add_theme_color_override("font_color", INK)
+	node.add_theme_color_override("font_color", Ui.INK)
 	node.position = rect.position
 	node.size = rect.size
 	_frame.add_child(node)
