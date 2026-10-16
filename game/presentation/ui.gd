@@ -184,6 +184,17 @@ static func key_cap(key: String) -> PanelContainer:
 	return node
 
 
+## KeyCaps side by side, and what they do after them.
+static func keys(names: Array, action: String = "") -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	for key: String in names:
+		row.add_child(key_cap(key))
+	if action != "":
+		row.add_child(label(action, 28, INK))
+	return row
+
+
 ## The design's portrait: a picture on a rounded square of `color`, inked round, standing on its
 ## bottom edge or `centred`. `inset` is the room the picture leaves on each side.
 static func portrait(path: String, side: int, inset: int, color: Color, radius: int = 40,

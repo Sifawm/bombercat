@@ -1,7 +1,8 @@
 class_name CatSelect
 extends Control
-## Both Players choose their Cat at the same time, each with its own cursor, using the keys
-## or gamepad they play with: left and right to move, the bomb button to confirm.
+## The design's CatSelect: both Players choose their Cat at the same time, each with its own
+## cursor, using the keys or gamepad they play with: left and right to move, the bomb button to
+## confirm. Once both are ready the Match starts, with no way back.
 
 ## Emitted after the countdown with the index in Roster.CATS of each Player's Cat.
 signal confirmed(picks: Array[int])
@@ -9,55 +10,69 @@ signal cancelled
 
 const PLAYERS := 2
 const COUNTDOWN_SECONDS := 3
+const TITLE := Rect2(64, 48, 1792, 106)
+const ROW := Rect2(64, 178, 1792, 718)
+const FOOTER := Rect2(64, 920, 1792, 112)
+const CARD := Vector2(272, 448)
+const PORTRAIT_HEIGHT := 336
+## The keys each Player chooses with, as the footer shows them.
+const KEYS: Array[Array] = [[["A", "D"], ["Space"]], [["left", "right"], ["Enter"]]]
 
 ## The slot each Player's cursor is on; the one after the last Cat is the Random option.
 ## A cursor never rests on a Cat the other Player has confirmed: that Cat is locked.
 var _cursors: Array[int] = [0, 1]
 ## Each Player's confirmed Cat, or -1.
 var _picks: Array[int] = [-1, -1]
-var _slots: Array[Control] = []
-var _cat_views: Array[ModelView] = []
-var _name_labels: Array[Label] = []
-## Per slot, the marker of each Player.
-var _markers: Array[Array] = []
-var _status: Label
+## When each cursor last came to its slot: of two on one card, the later one colours it.
+var _arrivals: Array[int] = [0, 1]
+var _moves := 1
+var _cards: Array[CatCard] = []
+var _controls: Array[Control] = []
+var _back := Ui.keys(["Esc"], "Back")
+var _middle := CenterContainer.new()
 
 
 func _init() -> void:
 	LocalPlayerController.register_actions()
-	var column := Ui.centred_column(self, 48)
-	column.add_child(Ui.label("Choose your Cat", Ui.TITLE_SIZE))
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(SkyBackdrop.new())
+	var frame := Ui.frame(self)
+	var title := Ui.title("Choose your Cat")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	title.position = TITLE.position
+	title.size = TITLE.size
+	frame.add_child(title)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 24)
+	row.position = ROW.position
+	row.size = ROW.size
+	row.add_theme_constant_override("separation", 32)
 	for index in Roster.CATS.size() + 1:
-		var slot := VBoxContainer.new()
-		var markers := HBoxContainer.new()
-		markers.alignment = BoxContainer.ALIGNMENT_CENTER
-		markers.custom_minimum_size.y = 60
-		_markers.append([])
-		for player in PLAYERS:
-			var marker := Ui.label("", 0, Roster.PLAYER_COLORS[player])
-			markers.add_child(marker)
-			_markers[index].append(marker)
-		slot.add_child(markers)
-		if index < Roster.CATS.size():
-			var view := ModelView.new(Roster.cat_scene(index), Vector2(260, 320))
-			view.play("idle")
-			_cat_views.append(view)
-			slot.add_child(view)
-			_name_labels.append(Ui.label(Roster.cat_name(index)))
-			slot.add_child(_name_labels[index])
-		else:
-			var question := Ui.label("?", 200)
-			question.custom_minimum_size = Vector2(260, 320)
-			question.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			slot.add_child(question)
-			slot.add_child(Ui.label("Random"))
-		_slots.append(slot)
-		row.add_child(slot)
-	column.add_child(row)
-	_status = Ui.label("")
-	column.add_child(_status)
+		var card := CatCard.new(index if index < Roster.CATS.size() else -1, CARD, PORTRAIT_HEIGHT)
+		card.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		card.button.focus_mode = Control.FOCUS_NONE  # the cursors choose, not the focus
+		card.button.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_cards.append(card)
+		row.add_child(card)
+	frame.add_child(row)
+	var footer := HBoxContainer.new()
+	footer.position = FOOTER.position
+	footer.size = FOOTER.size
+	for player in PLAYERS:
+		var controls := HBoxContainer.new()
+		controls.add_theme_constant_override("separation", 24)
+		controls.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		controls.alignment = BoxContainer.ALIGNMENT_BEGIN if player == 0 else BoxContainer.ALIGNMENT_END
+		var tag := Ui.tag("P%d" % (player + 1), Roster.PLAYER_COLORS[player])
+		tag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		controls.add_child(tag)
+		controls.add_child(Ui.keys(KEYS[player][0], "Move"))
+		controls.add_child(Ui.keys(KEYS[player][1], "Choose"))
+		_controls.append(controls)
+	footer.add_child(_controls[0])
+	_middle.add_child(_back)
+	footer.add_child(_middle)
+	footer.add_child(_controls[1])
+	frame.add_child(footer)
 	_refresh()
 
 
@@ -78,16 +93,18 @@ func _process(_delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel"):
+	if event.is_action_pressed("ui_cancel") and _picks.has(-1):  # no way back once both are ready
 		Audio.play(&"ui_cancel")
 		cancelled.emit()
 
 
 ## Moves a cursor one slot, skipping locked Cats.
 func _move(player: int, step: int) -> void:
-	_cursors[player] = posmod(_cursors[player] + step, _slots.size())
+	_cursors[player] = posmod(_cursors[player] + step, _cards.size())
 	while _picks.has(_cursors[player]):
-		_cursors[player] = posmod(_cursors[player] + step, _slots.size())
+		_cursors[player] = posmod(_cursors[player] + step, _cards.size())
+	_moves += 1
+	_arrivals[player] = _moves
 
 
 func _confirm(player: int) -> void:
@@ -97,30 +114,49 @@ func _confirm(player: int) -> void:
 		pick = unlocked.pick_random()
 		_cursors[player] = pick
 	_picks[player] = pick
-	_cat_views[pick].play("win")
 	Audio.play(&"ui_confirm")
 	for other in PLAYERS:
 		if _picks[other] == -1 and _cursors[other] == pick:
 			_move(other, 1)
 	_refresh()
+	Ui.bounce(_cards[pick].button)  # its dance would jump out of the card
 	if not _picks.has(-1):
 		set_process(false)
-		var countdown := create_tween()
-		for second in range(COUNTDOWN_SECONDS, 0, -1):
-			countdown.tween_callback(func() -> void:
-				_status.text = "Starting in %d..." % second
-				Audio.play(&"countdown"))
-			countdown.tween_interval(0.7)
-		countdown.tween_callback(func() -> void: confirmed.emit(_picks))
+		_start_countdown()
 
 
+## Tells the seconds left on a Notice where the way back was, and starts the Match after them.
+func _start_countdown() -> void:
+	for controls in _controls:
+		controls.modulate.a = 0.5
+	_middle.remove_child(_back)
+	_back.queue_free()
+	var notice := Ui.notice(Ui.Tone.PROGRESS, "")
+	_middle.add_child(notice)
+	var message: Label = notice.get_child(0).get_child(1)
+	var countdown := create_tween()
+	for second in range(COUNTDOWN_SECONDS, 0, -1):
+		countdown.tween_callback(func() -> void:
+			message.text = "Starting in %d…" % second
+			Audio.play(&"countdown"))
+		countdown.tween_interval(0.7)
+	countdown.tween_callback(func() -> void: confirmed.emit(_picks))
+
+
+## Draws each card free, or in the colour of the cursor on it, under the tag of each Player there.
 func _refresh() -> void:
-	for index in _slots.size():
+	for index in _cards.size():
+		var tags: Array[Control] = []
+		var colour: Variant = null
+		var latest := -1
 		for player in PLAYERS:
-			var marker: Label = _markers[index][player]
-			marker.visible = _cursors[player] == index
-			marker.text = "P%d%s" % [player + 1, " READY" if _picks[player] != -1 else ""]
-	# A locked Cat wears its Player's colour.
-	for index in _name_labels.size():
-		_name_labels[index].modulate = Roster.PLAYER_COLORS[_picks.find(index)] if _picks.has(index) else Color.WHITE
-	_status.text = "Move left or right, confirm with your bomb button"
+			if _cursors[player] != index:
+				continue
+			var tag := Ui.tag("P%d" % (player + 1), Roster.PLAYER_COLORS[player])
+			if _picks[player] != -1:
+				tag.get_child(0).add_child(Ui.badge("Ready", true))
+			tags.append(tag)
+			if _arrivals[player] > latest:
+				latest = _arrivals[player]
+				colour = Roster.PLAYER_COLORS[player]
+		_cards[index].show_claim(colour, tags)

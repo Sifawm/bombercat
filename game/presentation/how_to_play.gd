@@ -122,13 +122,13 @@ static func _rules() -> Array[Control]:
 		var fill := Roster.PLAYER_COLORS[at] if at < 2 else Ui.INK
 		var cells: Array[Control] = [Ui.tag(who[0], fill, Ui.CREAM if at == 2 else Ui.INK)]
 		for keys: Array in who.slice(1):
-			cells.append(_keys(keys))
+			cells.append(Ui.keys(keys))
 		table.add_child(_row(cells))
 	controls.add_child(table)
 	var system := HBoxContainer.new()
 	system.add_theme_constant_override("separation", 32)
-	system.add_child(_keys(["Esc", "Start"], "Pause"))
-	system.add_child(_keys(["F11"], "Fullscreen"))
+	system.add_child(Ui.keys(["Esc", "Start"], "Pause"))
+	system.add_child(Ui.keys(["F11"], "Fullscreen"))
 	var below := MarginContainer.new()
 	below.add_theme_constant_override("margin_top", 16)
 	below.add_child(system)
@@ -166,17 +166,6 @@ static func _row(cells: Array[Control]) -> HBoxContainer:
 		cell.add_child(cells[at])
 		cells[at].size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		row.add_child(cell)
-	return row
-
-
-## KeyCaps side by side, and what they do after them.
-static func _keys(keys: Array, action: String = "") -> HBoxContainer:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	for key: String in keys:
-		row.add_child(Ui.key_cap(key))
-	if action != "":
-		row.add_child(_text(action, 28))
 	return row
 
 
