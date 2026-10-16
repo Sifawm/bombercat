@@ -1,5 +1,5 @@
 extends Node
-## The game's flow: Title -> Cat Select -> Match -> Match Result, or online Title -> Online
+## The game's flow: Title -> Cat Select -> Map Select -> Match -> Match Result, or online Title -> Online
 ## Entry -> Waiting Room. One screen at a time.
 
 const ROUND_VIEW: PackedScene = preload("res://presentation/round_view.tscn")
@@ -10,6 +10,8 @@ var _screen: Node
 var _curtain := ColorRect.new()
 ## The index in Roster.CATS of each Player's Cat, kept for a Rematch.
 var _picks: Array[int]
+## The Map of the local Match, kept for a Rematch and offered first next time.
+var _map := "backyard"
 ## The screen of a Room that is shown or on its way in: "room", "configure", "match" or
 ## "result"; "" out of a Room.
 var _room_screen := ""
@@ -148,15 +150,25 @@ func _online_result(game: Dictionary) -> MatchResult:
 
 func _show_cat_select() -> void:
 	var cat_select := CatSelect.new()
-	cat_select.confirmed.connect(_start_match)
+	cat_select.confirmed.connect(_show_map_select)
 	cat_select.cancelled.connect(_show_title)
 	_show(cat_select)
 
 
-func _start_match(picks: Array[int] = _picks) -> void:
+func _show_map_select(picks: Array[int]) -> void:
 	_picks = picks
+	var map_select := MapSelect.new(_map)
+	map_select.confirmed.connect(func(map: String) -> void:
+		_map = map
+		_start_match())
+	map_select.cancelled.connect(_show_cat_select)
+	_show(map_select)
+
+
+func _start_match() -> void:
 	var view: RoundView = ROUND_VIEW.instantiate()
-	view.cat_picks = picks
+	view.map_scene = load("res://maps/%s.tscn" % _map)
+	view.cat_picks = _picks
 	view.match_finished.connect(_show_match_result)
 	view.quit_requested.connect(_show_title)
 	_show(view, false)  # it plays the Round music itself
