@@ -54,11 +54,11 @@ static func button(text: String, on_pressed: Callable, primary: bool = false) ->
 	node.mouse_entered.connect(node.grab_focus)  # one button lit at a time, whatever points
 	node.pressed.connect(on_pressed)
 	node.pressed.connect(Audio.play.bind(&"ui_confirm"))
-	node.focus_entered.connect(_bounce.bind(node))
+	node.focus_entered.connect(bounce.bind(node))
 	return node
 
 
-static func _bounce(control: Control) -> void:
+static func bounce(control: Control) -> void:
 	control.pivot_offset = control.size / 2.0
 	control.scale = Vector2.ONE * 1.15
 	control.create_tween().tween_property(control, "scale", Vector2.ONE, 0.25) \
@@ -76,14 +76,14 @@ static func surface(fill: Color, focused: bool = false, radius: int = 28, stroke
 	box.set_content_margin(SIDE_TOP, 16)
 	box.set_content_margin(SIDE_BOTTOM, 16)
 	if focused:
-		box.add(_rounded(INK, radius, 14))
-		box.add(_rounded(CREAM, radius, 8))
-	box.add(_rounded(shadow, radius, 0), Vector2(0, 14 if focused else 10))
-	var body := _rounded(fill, radius, 0)
+		box.add(rounded(INK, radius, 14))
+		box.add(rounded(CREAM, radius, 8))
+	box.add(rounded(shadow, radius, 0), Vector2(0, 14 if focused else 10))
+	var body := rounded(fill, radius, 0)
 	body.set_border_width_all(stroke_width)
 	body.border_color = stroke
 	box.add(body)
-	var shade := _rounded(Color(INK, 0.18), radius, 0)
+	var shade := rounded(Color(INK, 0.18), radius, 0)
 	shade.draw_center = false
 	shade.border_width_bottom = stroke_width + 10  # under the stroke, 10 px of the body
 	box.add(shade)
@@ -91,13 +91,79 @@ static func surface(fill: Color, focused: bool = false, radius: int = 28, stroke
 
 
 ## A rounded shape, grown by `spread` on every side.
-static func _rounded(color: Color, radius: int, spread: int) -> StyleBoxFlat:
+static func rounded(color: Color, radius: int, spread: int) -> StyleBoxFlat:
 	var box := StyleBoxFlat.new()
 	box.bg_color = color
 	box.border_color = color
 	box.set_corner_radius_all(radius + spread)
 	box.set_expand_margin_all(spread)
 	return box
+
+
+## A surface claimed by a player: a ring of that player's colour inside an inked one, lifted
+## on a deeper shadow.
+static func claimed(fill: Color, color: Color, radius: int = 40) -> Layers:
+	var box := Layers.new()
+	box.add(rounded(INK, radius, 6), Vector2(0, 16))
+	box.add(rounded(INK, radius, 6))
+	var body := rounded(fill, radius, 0)
+	body.set_border_width_all(12)
+	body.border_color = color
+	box.add(body)
+	return box
+
+
+## A screen's title: the design's yellow letters, inked round and on a hard shadow.
+static func title(text: String) -> Label:
+	var node := label(text, 88, YELLOW, LILITA)
+	node.add_theme_color_override("font_outline_color", INK)
+	node.add_theme_constant_override("outline_size", 10)  # scaled by the theme to the design's 24
+	node.add_theme_color_override("font_shadow_color", INK)
+	node.add_theme_constant_override("shadow_offset_x", 0)
+	node.add_theme_constant_override("shadow_offset_y", 14)
+	node.add_theme_constant_override("shadow_outline_size", 10)
+	return node
+
+
+## The design's Badge: a word on a pill, light on ink or ink on cream.
+static func badge(text: String, dark: bool) -> PanelContainer:
+	var node := PanelContainer.new()
+	var box := rounded(INK if dark else CREAM, 28, 0)
+	box.set_border_width_all(6)
+	box.border_color = INK
+	box.set_content_margin(SIDE_LEFT, 16)
+	box.set_content_margin(SIDE_RIGHT, 16)
+	box.set_content_margin(SIDE_TOP, 0)
+	box.set_content_margin(SIDE_BOTTOM, 0)
+	node.add_theme_stylebox_override("panel", box)
+	node.add_child(label(text, 28, CREAM if dark else INK, FREDOKA_SEMIBOLD))
+	return node
+
+
+## A small round cream button with a glyph, ringed when focused.
+static func round_button(glyph: String, diameter: int, on_pressed: Callable) -> Button:
+	var node := Button.new()
+	node.text = glyph
+	node.custom_minimum_size = Vector2(diameter, diameter)
+	var body := rounded(CREAM, diameter / 2, 0)
+	body.set_border_width_all(6)
+	body.border_color = INK
+	for state: String in ["normal", "hover", "pressed", "hover_pressed"]:
+		node.add_theme_stylebox_override(state, body)
+	var focus := Layers.new()
+	focus.add(rounded(INK, diameter / 2, 10))
+	focus.add(rounded(CREAM, diameter / 2, 5))
+	focus.add(body)
+	node.add_theme_stylebox_override("focus", focus)
+	node.add_theme_font_override("font", LILITA)
+	node.add_theme_font_size_override("font_size", 28)
+	for color: String in ["font_color", "font_hover_color", "font_pressed_color",
+			"font_hover_pressed_color", "font_focus_color"]:
+		node.add_theme_color_override(color, INK)
+	node.mouse_entered.connect(node.grab_focus)
+	node.pressed.connect(on_pressed)
+	node.pressed.connect(Audio.play.bind(&"ui_confirm"))
+	return node
 
 
 ## The design's TextField: a name written on a cream surface, ringed when focused and red when
@@ -131,8 +197,8 @@ static func mark_field(field: LineEdit, refused: bool) -> void:
 static func notice(tone: Tone, message: String) -> PanelContainer:
 	var node := PanelContainer.new()
 	var box := Layers.new()
-	box.add(_rounded(Color(INK, 0.35), 28, 0), Vector2(0, 12))
-	box.add(_rounded(INK, 28, 0))
+	box.add(rounded(Color(INK, 0.35), 28, 0), Vector2(0, 12))
+	box.add(rounded(INK, 28, 0))
 	box.set_content_margin_all(12)
 	box.set_content_margin(SIDE_RIGHT, 32)
 	node.add_theme_stylebox_override("panel", box)

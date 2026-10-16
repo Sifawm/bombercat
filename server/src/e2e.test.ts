@@ -75,20 +75,14 @@ test('a Room takes four Users, each with a Cat, and the Admin runs it', async ()
   const [ana, bea] = [client(), client()];
   const roomId = await createRoom(ana);
 
-  for (const profile of [null, { cat: 5 }, { cat: 1.5 }, { cat: '1' }]) {
-    expect(await bea.login({ name: 'Bea', profile: profile as Profile, roomId })).toEqual({
-      ok: false,
-      reason: 'invalidProfile',
-    });
-  }
-  // Two Users may bring the same Cat.
+  // A Profile that is not valid, or whose Cat is brought, is swapped for the first Cat free.
   expect(await bea.login({ name: 'Bea', profile: { cat: 0 }, roomId })).toMatchObject({ ok: true });
   await until(bea, () => bea.connection.status === 'connected');
-  expect(bea.room!.users.map((user) => user.profile)).toEqual([{ cat: 0 }, { cat: 0 }]);
+  expect(await client().login({ name: 'Cleo', profile: { cat: '1' } as never, roomId })).toMatchObject({ ok: true });
+  await until(bea, () => bea.room!.users.length === 3);
+  expect(bea.room!.users.map((user) => user.profile)).toEqual([{ cat: 0 }, { cat: 1 }, { cat: 2 }]);
 
-  for (const name of ['Cleo', 'Dani']) {
-    expect(await client().login({ name, profile: { cat: 2 }, roomId })).toMatchObject({ ok: true });
-  }
+  expect(await client().login({ name: 'Dani', profile: { cat: 2 }, roomId })).toMatchObject({ ok: true });
   expect(await client().login({ name: 'Eva', profile: { cat: 3 }, roomId })).toEqual({ ok: false, reason: 'roomFull' });
 
   ana.send('porter:lockRoom', { locked: true });
@@ -96,6 +90,20 @@ test('a Room takes four Users, each with a Cat, and the Admin runs it', async ()
   ana.send('porter:kickUser', { name: 'Bea' });
   await until(bea, () => bea.connection.status === 'closed');
   expect(bea.connection).toEqual({ status: 'closed', reason: 'kicked' });
+});
+
+test('a User changes its Cat for one nobody brings', async () => {
+  const { ana, rest } = await room('Bea');
+  const [bea] = rest;
+  const rejected = new Promise((resolve) => bea.on('porter:messageRejected', resolve));
+  bea.send('porter:updateProfile', { profile: { cat: 0 } });
+  expect(await rejected).toEqual({ rejected: 'porter:updateProfile', reason: 'invalidProfile' });
+
+  bea.send('porter:updateProfile', { profile: { cat: 4 } });
+  await until(ana, () => ana.room!.users[1].profile.cat === 4);
+  // Ana takes the Cat Bea left.
+  ana.send('porter:updateProfile', { profile: { cat: 1 } });
+  await until(bea, () => bea.room!.users[0].profile.cat === 1);
 });
 
 /** Ana, the Admin, and whoever else is named, in a Room together. */

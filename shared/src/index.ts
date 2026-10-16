@@ -19,6 +19,16 @@ export const isProfile = (profile: unknown): profile is Profile => {
   return Number.isInteger(cat) && (cat as number) >= 0 && (cat as number) < CAT_COUNT;
 };
 
+/** Whether a Profile is valid and its Cat is not brought by any of the others: a Cat is one User's. */
+export const isFreeProfile = (profile: unknown, others: unknown[]): profile is Profile =>
+  isProfile(profile) && !others.some((other) => (other as Profile).cat === profile.cat);
+
+/** The first Cat that none of the others brings; `null` when they bring them all. */
+export const freeProfile = (others: unknown[]): Profile | null => {
+  for (let cat = 0; cat < CAT_COUNT; cat++) if (isFreeProfile({ cat }, others)) return { cat };
+  return null;
+};
+
 export type MapName = keyof typeof maps;
 
 /** A Tile's coordinates, or a continuous position in Tile units: Tile centres are at whole numbers. */

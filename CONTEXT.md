@@ -155,7 +155,7 @@ A named participant in one Room. Every online Player is a User, but a User who j
 _Avoid_: Player (for someone who is only in the Room), account, spectator
 
 **Profile**:
-What a User brings into the Room besides its name: the Cat it plays. It is chosen before joining and cannot change inside the Room; two Users may bring the same Cat.
+What a User brings into the Room besides its name: the Cat it plays. A User enters with the Cat it played last, or the first one free, and chooses another inside the Room; no two Users of a Room bring the same Cat.
 
 **Admin**:
 The one User of a Room who starts and ends its Matches, changes their settings, removes Users and locks the Room.
