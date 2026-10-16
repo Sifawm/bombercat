@@ -8,9 +8,8 @@ const CATS: Array[Dictionary] = [
 	{"name": "Hami", "scene": preload("res://assets/models/hami.glb")},
 	{"name": "Ada Lovelace", "scene": preload("res://assets/models/ada.glb")},
 ]
-const PLAYER_COLORS: Array[Color] = [
-	Color(1.0, 0.45, 0.3), Color(0.35, 0.75, 1.0), Color(0.5, 0.9, 0.4), Color(1.0, 0.8, 0.3),
-]
+## The design's player colours, in the order the Users joined the Room.
+const PLAYER_COLORS: Array[Color] = [Color("ff5a5f"), Color("4d9bff"), Color("3ccb6e"), Color("c084ff")]
 
 
 static func cat_name(pick: int) -> String:
