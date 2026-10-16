@@ -142,6 +142,48 @@ static func badge(text: String, dark: bool) -> PanelContainer:
 	return node
 
 
+## A word on a pill of `fill`, inked round, as the design's PlayerTag names a Player. More parts
+## can follow the word in its first child.
+static func tag(text: String, fill: Color, text_color: Color = INK) -> PanelContainer:
+	var node := PanelContainer.new()
+	var box := rounded(fill, 28, 0)
+	box.set_border_width_all(6)
+	box.border_color = INK
+	box.content_margin_left = 20
+	box.content_margin_right = 20
+	box.content_margin_top = 10
+	box.content_margin_bottom = 10
+	node.add_theme_stylebox_override("panel", box)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	node.add_child(row)
+	row.add_child(label(text, 28, text_color, LILITA))
+	return node
+
+
+## The design's KeyCap: the name of a key on a small cream cap; "up", "down", "left" and "right"
+## are arrows.
+static func key_cap(key: String) -> PanelContainer:
+	var node := PanelContainer.new()
+	var box := Layers.new()
+	box.add(rounded(INK, 28, 0), Vector2(0, 8))
+	var body := rounded(CREAM, 28, 0)
+	body.set_border_width_all(6)
+	body.border_color = INK
+	box.add(body)
+	box.content_margin_left = 16
+	box.content_margin_right = 16
+	box.content_margin_top = 6
+	box.content_margin_bottom = 10
+	node.add_theme_stylebox_override("panel", box)
+	node.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	if Arrow.TURNS.has(key):
+		node.add_child(Arrow.new(key))
+	else:
+		node.add_child(label(key, 28, INK, LILITA))
+	return node
+
+
 ## The design's portrait: a picture on a rounded square of `color`, inked round, standing on its
 ## bottom edge or `centred`. `inset` is the room the picture leaves on each side.
 static func portrait(path: String, side: int, inset: int, color: Color, radius: int = 40,
@@ -376,6 +418,24 @@ class Tick:
 		for i in points.size():
 			points[i] += centre
 		draw_polyline(points, INK, 5.0, true)
+
+
+## The arrow of a KeyCap, which the design's letters have none of.
+class Arrow:
+	extends Control
+
+	const TURNS := {"right": 0.0, "down": 0.25, "left": 0.5, "up": 0.75}
+	var _angle: float
+
+	func _init(direction: String) -> void:
+		_angle = TAU * TURNS[direction]
+		custom_minimum_size = Vector2(22, 34) if direction == "left" or direction == "right" else Vector2(28, 34)
+
+	func _draw() -> void:
+		var points := PackedVector2Array([Vector2(9, 0), Vector2(-7, -10), Vector2(-7, 10)])
+		for i in points.size():
+			points[i] = size / 2.0 + points[i].rotated(_angle)
+		draw_colored_polygon(points, INK)
 
 
 ## StyleBoxes drawn one over another, each moved by its offset.
