@@ -2,7 +2,7 @@ class_name RoundView
 extends Node3D
 ## Presentation of a Match on a Map: places the models where the rules say, turns the rules'
 ## signals into effects and sound, draws the HUD and shows each Round's result. It decides
-## nothing. The countdown is told in the middle of the picture.
+## nothing. The countdown is told in the middle of the picture, in the design's big letters.
 
 signal match_finished(game_match: Match)
 signal quit_requested
@@ -16,6 +16,9 @@ const RESULT_SECONDS := 2.5
 const COUNTDOWN_SECONDS := 3.0
 ## How long "Go!" stays on screen.
 const GO_SECONDS := 0.6
+const COUNTDOWN_SIZE := 200
+## How much each second of the countdown swells as it comes in.
+const COUNTDOWN_BOUNCE := 1.5
 ## Seconds an Explosion takes to reach each further Tile, so it grows outwards.
 const EXPLOSION_SPREAD := 0.035
 const SHAKE := 0.12
@@ -68,6 +71,7 @@ var _hud: RoundHud
 ## The size of the Map the camera frames, framed again when the window changes shape.
 var _framed_size := Vector2i.ZERO
 var _pause_menu := PauseMenu.new()
+var _countdown := Ui.title("", COUNTDOWN_SIZE)
 
 @onready var _camera: Camera3D = $Camera
 @onready var _result_label: Label = $Hud/Result
@@ -78,6 +82,9 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(func() -> void:
 		if _framed_size != Vector2i.ZERO:
 			_frame_map(_framed_size))
+	_countdown.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_countdown.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	$Hud.add_child(_countdown)
 	$Hud.add_child(_pause_menu)
 	start_match()
 
@@ -130,16 +137,21 @@ func _count_down(left: float) -> void:
 	if _countdown_left > COUNTDOWN_SECONDS:
 		pass  # the Cats are still dropping in
 	elif _countdown_left <= 0.0:
-		_result_label.text = "Go!"
+		_show_countdown("Go!")
 		Audio.play(&"go")
-	elif ceili(_countdown_left) != second or _result_label.text == "":
-		_result_label.text = str(ceili(_countdown_left))
+	elif ceili(_countdown_left) != second or _countdown.text == "":
+		_show_countdown(str(ceili(_countdown_left)))
 		Audio.play(&"countdown")
 
 
+func _show_countdown(text: String) -> void:
+	_countdown.text = text
+	Ui.bounce(_countdown, COUNTDOWN_BOUNCE)
+
+
 func _clear_go() -> void:
-	if _result_label.text == "Go!" and _round.time_left < config.round_time - GO_SECONDS:
-		_result_label.text = ""
+	if _countdown.text == "Go!" and _round.time_left < config.round_time - GO_SECONDS:
+		_countdown.text = ""
 
 
 func _process(delta: float) -> void:
@@ -217,6 +229,7 @@ func _start_round() -> void:
 	_crate_nodes.clear()
 	_powerup_nodes.clear()
 	_result_label.text = ""
+	_countdown.text = ""
 	_slow_motion = false
 	_hurry_second = 0
 	_music_is_faster = false

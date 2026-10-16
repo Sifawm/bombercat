@@ -59,9 +59,10 @@ static func button(text: String, on_pressed: Callable, primary: bool = false) ->
 	return node
 
 
-static func bounce(control: Control) -> void:
+## Swells `control` to `from` times its size and lets it spring back.
+static func bounce(control: Control, from: float = 1.15) -> void:
 	control.pivot_offset = control.size / 2.0
-	control.scale = Vector2.ONE * 1.15
+	control.scale = Vector2.ONE * from
 	control.create_tween().tween_property(control, "scale", Vector2.ONE, 0.25) \
 			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
@@ -115,8 +116,8 @@ static func claimed(fill: Color, color: Color, radius: int = 40) -> Layers:
 
 
 ## A screen's title: the design's yellow letters, inked round and on a hard shadow.
-static func title(text: String) -> Label:
-	var node := label(text, 88, YELLOW, LILITA)
+static func title(text: String, font_size: int = 88) -> Label:
+	var node := label(text, font_size, YELLOW, LILITA)
 	node.add_theme_color_override("font_outline_color", INK)
 	node.add_theme_constant_override("outline_size", 10)  # scaled by the theme to the design's 24
 	node.add_theme_color_override("font_shadow_color", INK)
