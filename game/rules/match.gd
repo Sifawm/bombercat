@@ -13,6 +13,8 @@ var bombs_placed: Array[int] = []
 var crates_destroyed: Array[int] = []
 var powerups_collected: Array[int] = []
 var current_round: Round
+## Which Round of the Match the current one is, from 1. A replayed Draw counts as another.
+var round_number := 0
 var finished := false
 ## The Player who won the Match, once it is finished.
 var winner := -1
@@ -35,6 +37,7 @@ func _init(map: MapData, game_config: GameConfig, players: int = 2,
 
 ## Starts the next Round on the restored Map; every Cat is back to its starting abilities.
 func start_round() -> Round:
+	round_number += 1
 	current_round = Round.new(_map, config, _spawn_points, _random)
 	current_round.round_ended.connect(_on_round_ended)
 	return current_round

@@ -17,6 +17,8 @@ export class Match {
   readonly cratesDestroyed: number[];
   readonly powerupsCollected: number[];
   currentRound!: Round;
+  /** Which Round of the Match the current one is, from 1. A replayed Draw counts as another. */
+  roundNumber = 0;
   finished = false;
   /** The Player who won the Match, once it is finished. */
   winner = -1;
@@ -42,6 +44,7 @@ export class Match {
    * The Players in `absent` take no part in it.
    */
   startRound(absent: readonly number[] = []): Round {
+    this.roundNumber += 1;
     this.currentRound = new Round(this.map, this.config, this.spawnPoints, this.random, absent);
     return this.currentRound;
   }

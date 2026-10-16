@@ -278,6 +278,7 @@ export class BombercatManager
       bombsPlaced: [...match.bombsPlaced],
       cratesDestroyed: [...match.cratesDestroyed],
       powerupsCollected: [...match.powerupsCollected],
+      roundNumber: match.roundNumber,
       round: snapshotOf(match.currentRound),
     };
     Object.assign(ctx.game.state, state);

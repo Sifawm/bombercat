@@ -17,6 +17,7 @@ func start_round() -> Round:
 	bombs_placed.assign(state.bombsPlaced)
 	crates_destroyed.assign(state.cratesDestroyed)
 	powerups_collected.assign(state.powerupsCollected)
+	round_number = int(state.roundNumber)
 	current_round = RemoteRound.new(_map, config, state.round)
 	current_round.round_ended.connect(_on_round_ended)
 	return current_round

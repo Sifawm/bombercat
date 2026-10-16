@@ -168,6 +168,7 @@ test('a Match: Inputs move a Cat a Tick each, its Bomb kills it and the other Pl
   ana.send('porter:startMatch');
   await until(bea, () => state(bea).round !== null);
   expect(state(bea).players).toEqual(['Ana', 'Bea']);
+  expect(state(bea).roundNumber).toBe(1);
   expect(state(bea).round!.cats.map(({ x, y }) => ({ x, y }))).toEqual([
     { x: 1, y: 1 },
     { x: 11, y: 9 },

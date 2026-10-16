@@ -47,6 +47,7 @@ func test_a_draw_awards_no_win_and_is_replayed() -> void:
 	advance(game_match.start_round(), 1.1)
 	advance(game_match.start_round(), 1.1)
 	check(not game_match.finished, "Draws never end a Match")
+	check_eq(game_match.round_number, 3, "a replayed Draw is another Round")
 
 
 func test_the_number_of_rounds_to_win_is_tunable() -> void:

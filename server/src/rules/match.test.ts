@@ -44,6 +44,7 @@ test('a Draw awards no win and is replayed', () => {
     advance(match, 1.1);
   }
   expect(match.finished).toBe(false); // Draws never end a Match
+  expect(match.roundNumber).toBe(3); // a replayed Draw is another Round
 });
 
 test('the number of Rounds to win is tunable', () => {

@@ -124,6 +124,8 @@ export interface MatchState {
   bombsPlaced: number[];
   cratesDestroyed: number[];
   powerupsCollected: number[];
+  /** Which Round of the Match `round` is, from 1. A replayed Draw counts as another. */
+  roundNumber: number;
   round: RoundSnapshot | null;
   /** Whether the Admin has taken the Room to configure the next Match. A Match starts without it. */
   configuring: boolean;
@@ -216,6 +218,7 @@ export const bombercat = {
     bombsPlaced: [],
     cratesDestroyed: [],
     powerupsCollected: [],
+    roundNumber: 0,
     round: null,
     configuring: false,
   }),

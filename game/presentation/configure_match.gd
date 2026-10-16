@@ -24,7 +24,6 @@ const BACK := Rect2(64, 932, 360, 88)
 const ERROR := Rect2(448, 920, 784, 112)
 ## The foot's right half, where the main action or what the others wait for stands.
 const MAIN := Rect2(1072, 920, 784, 112)
-const SKY := Color("a8e2ff")
 
 ## By Map name, its size and how many Spawn Points it has.
 static var _map_facts: Dictionary[String, Array] = {}
@@ -266,7 +265,7 @@ func _chip(user: Dictionary, at: int) -> PanelContainer:
 	avatar.custom_minimum_size = Vector2(64, 64)
 	var sky := Panel.new()
 	sky.size = avatar.custom_minimum_size
-	sky.add_theme_stylebox_override("panel", Ui.rounded(SKY, 32, 0))
+	sky.add_theme_stylebox_override("panel", Ui.rounded(Ui.SKY, 32, 0))
 	sky.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
 	avatar.add_child(sky)
 	var cat := Ui.picture(Roster.portrait(int(user.profile.cat)), Rect2(1, 4, 63, 96), sky)
@@ -355,7 +354,7 @@ static func _map_texture(map: String) -> Texture2D:
 static func _sky(size: Vector2) -> PanelContainer:
 	var sky := PanelContainer.new()
 	sky.custom_minimum_size = size
-	sky.add_theme_stylebox_override("panel", Ui.rounded(SKY, 28, 0))
+	sky.add_theme_stylebox_override("panel", Ui.rounded(Ui.SKY, 28, 0))
 	return sky
 
 

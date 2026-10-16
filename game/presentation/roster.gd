@@ -23,3 +23,8 @@ static func cat_scene(pick: int) -> PackedScene:
 ## The design's picture of the Cat standing, exported from Penpot.
 static func portrait(pick: int) -> String:
 	return "res://assets/portraits/%s.png" % CATS[pick].portrait
+
+
+## The design's picture of the Cat's face, exported from Penpot.
+static func face(pick: int) -> String:
+	return "res://assets/faces/%s.png" % CATS[pick].portrait

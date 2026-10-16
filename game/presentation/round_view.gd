@@ -27,8 +27,14 @@ const SLOW_MOTION_SECONDS := 1.2
 const ZOOM_FOV := 20.0
 ## Seconds left when the timer starts pulsing, and when the music speeds up.
 const HURRY_SECONDS := 10
+## How much the timer swells at the top of each pulse.
+const HURRY_PULSE := 0.25
 const FASTER_MUSIC_SECONDS := 30.0
 const FASTER_MUSIC := 1.18
+## Points checked along each side of the Map when framing it.
+const FRAMED_POINTS := 8
+## How far the camera may back away to frame the Map, when the HUD leaves it no room.
+const MAX_CAMERA_DISTANCE := 100.0
 const CONFETTI: Array[Color] = [Color(1, 0.3, 0.3), Color(1, 0.85, 0.2), Color(0.3, 0.8, 1), Color(0.5, 1, 0.4), Color(1, 0.5, 0.9)]
 
 @export var config: GameConfig
@@ -64,7 +70,6 @@ var _framed_size := Vector2i.ZERO
 var _pause_menu := PauseMenu.new()
 
 @onready var _camera: Camera3D = $Camera
-@onready var _timer_label: Label = $Hud/Timer
 @onready var _result_label: Label = $Hud/Result
 
 
@@ -160,7 +165,7 @@ func _process(delta: float) -> void:
 	_camera.v_offset = randf_range(-1.0, 1.0) * _shake
 	_show_time()
 	for player in _round.cats.size():
-		_hud.show_held(player, Powerup.held_by(_round.cats[player]))
+		_hud.show_cat(player, _round.cats[player], config)
 
 
 ## Starts a new Match between the Cats in `cat_picks`.
@@ -190,11 +195,8 @@ func _show_wins() -> void:
 ## The timer; in the last seconds it turns red, pulses and beeps, and the music speeds up.
 func _show_time() -> void:
 	var seconds := ceili(maxf(_round.time_left, 0.0))
-	_timer_label.text = "%d:%02d" % [seconds / 60, seconds % 60]
 	var hurry := seconds <= HURRY_SECONDS and not _round.finished
-	_timer_label.pivot_offset = _timer_label.size / 2.0
-	_timer_label.scale = Vector2.ONE * (1.0 + 0.25 * absf(sin(_round.time_left * PI)) if hurry else 1.0)
-	_timer_label.modulate = Color(1.0, 0.35, 0.3) if hurry else Color.WHITE
+	_hud.show_time(seconds, hurry, HURRY_PULSE * absf(sin(_round.time_left * PI)) if hurry else 0.0)
 	if hurry and seconds != _hurry_second:
 		_hurry_second = seconds
 		Audio.play(&"warning")
@@ -228,6 +230,7 @@ func _start_round() -> void:
 	_countdown_left = CatView.DROP_SECONDS + COUNTDOWN_SECONDS
 
 	_round = _match.start_round()
+	_hud.show_round(_match.round_number)
 	_round.bomb_placed.connect(_on_bomb_placed)
 	_round.bomb_moved.connect(_on_bomb_moved)
 	_round.bomb_detonated.connect(_on_bomb_detonated)
@@ -262,23 +265,38 @@ func _to_world(tile_position: Vector2) -> Vector3:
 	return _map_node.tile_to_local(tile_position)
 
 
-## Places the camera south of the Map, looking north and down, and backs it away until
-## the whole Map (with a margin) is inside the view.
+## Places the camera south of the Map, looking north and down, and backs it away until the
+## whole Map is in the picture and clear of the HUD: the outline of its outer Tiles, at the
+## foot and at the top of a Wall, is checked point by point.
 func _frame_map(map_size: Vector2i) -> void:
 	_framed_size = map_size
 	var last := Vector2(map_size - Vector2i.ONE)
-	var corners: Array[Vector3] = []
-	for corner: Vector2 in [Vector2(-1, -1), Vector2(last.x + 1, -1), Vector2(-1, last.y + 1), last + Vector2.ONE]:
-		corners.append(_to_world(corner))
-		corners.append(_to_world(corner) + Vector3.UP)
+	var corners: Array[Vector2] = [Vector2(-0.5, -0.5), Vector2(last.x + 0.5, -0.5),
+			last + Vector2.ONE * 0.5, Vector2(-0.5, last.y + 0.5)]
+	var outline: Array[Vector3] = []
+	for side in corners.size():
+		for step in FRAMED_POINTS:
+			var point := _to_world(corners[side].lerp(corners[(side + 1) % corners.size()], float(step) / FRAMED_POINTS))
+			outline.append(point)
+			outline.append(point + Vector3.UP)
+	var picture := get_viewport().get_visible_rect()
+	var covered := _hud.covered()
 	_camera.fov = CAMERA_FOV
 	_camera.rotation = Vector3(-CAMERA_PITCH, 0.0, 0.0)
 	var distance := 5.0
-	while true:
+	while distance < MAX_CAMERA_DISTANCE:
 		_camera.position = _to_world(last / 2.0) + _camera.basis.z * distance
-		if corners.all(_camera.is_position_in_frustum):
+		if outline.all(_is_clear.bind(picture, covered)):
 			break
 		distance += 0.25
+
+
+## Whether `point` is seen in the picture, outside every part of it the HUD covers.
+func _is_clear(point: Vector3, picture: Rect2, covered: Array[Rect2]) -> bool:
+	if _camera.is_position_behind(point):
+		return false
+	var seen := _camera.unproject_position(point)
+	return picture.has_point(seen) and covered.all(func(rect: Rect2) -> bool: return not rect.has_point(seen))
 
 
 func _on_bomb_placed(bomb: Bomb) -> void:

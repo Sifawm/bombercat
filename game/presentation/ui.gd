@@ -11,6 +11,7 @@ const YELLOW := Color("ffc93c")
 const RED := Color("ff4f64")
 const GREEN := Color("7ed957")
 const BLUE := Color("3fa9f5")
+const SKY := Color("a8e2ff")
 const LILITA: FontFile = preload("res://assets/fonts/LilitaOne-Regular.ttf")
 const FREDOKA_MEDIUM: FontVariation = preload("res://assets/fonts/fredoka_medium.tres")
 const FREDOKA_SEMIBOLD: FontVariation = preload("res://assets/fonts/fredoka_semibold.tres")
@@ -138,6 +139,41 @@ static func badge(text: String, dark: bool) -> PanelContainer:
 	node.add_theme_stylebox_override("panel", box)
 	node.add_child(label(text, 28, CREAM if dark else INK, FREDOKA_SEMIBOLD))
 	return node
+
+
+## The design's portrait: a picture on a rounded square of `color`, standing on its bottom edge
+## and inked round. `inset` is the room the picture leaves on each side.
+static func portrait(path: String, side: int, inset: int, color: Color, radius: int = 40) -> Control:
+	var node := Control.new()
+	node.custom_minimum_size = Vector2(side, side)
+	var back := Panel.new()
+	back.size = node.custom_minimum_size
+	back.add_theme_stylebox_override("panel", rounded(color, radius, 0))
+	back.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
+	node.add_child(back)
+	var size := side - 2 * inset
+	picture(path, Rect2(inset, side - size, size, size), back)
+	var ring := Panel.new()
+	ring.size = node.custom_minimum_size
+	var stroke := rounded(Color.TRANSPARENT, radius, 0)
+	stroke.draw_center = false
+	stroke.set_border_width_all(6)
+	stroke.border_color = INK
+	ring.add_theme_stylebox_override("panel", stroke)
+	node.add_child(ring)
+	return node
+
+
+## The design's WinPip: a Round won, in yellow, or still to win.
+static func pip(won: bool) -> Panel:
+	var node := Panel.new()
+	node.custom_minimum_size = Vector2(36, 36)
+	var box := rounded(YELLOW if won else CREAM, 18, 0)
+	box.set_border_width_all(6)
+	box.border_color = INK
+	node.add_theme_stylebox_override("panel", box)
+	return node
+
 
 
 ## A small round cream button with a glyph, ringed when focused.
