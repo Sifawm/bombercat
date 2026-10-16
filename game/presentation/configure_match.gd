@@ -236,7 +236,7 @@ func _render() -> void:
 	for chip in _players.get_children():
 		_players.remove_child(chip)
 		chip.queue_free()
-	for at in room.users.size():
+	for at: int in room.users.size():
 		_players.add_child(_chip(room.users[at], at))
 	_back.text = "Back to Room" if admin else "Leave"
 	_start.visible = admin

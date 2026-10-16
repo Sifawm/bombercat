@@ -148,7 +148,7 @@ func _render() -> void:
 	var focused := get_viewport().gui_get_focus_owner()
 	var kick_focused := "" if focused == null else String(focused.name)  # a tag's kick, drawn anew
 	var owners: Dictionary[int, int] = {}  # by Cat, the index of the User that brings it
-	for at in room.users.size():
+	for at: int in room.users.size():
 		owners[int(room.users[at].profile.cat)] = at
 	for pick in _cards.size():
 		var at: int = owners.get(pick, -1)
