@@ -59,6 +59,8 @@ var _slow_motion := false
 var _hurry_second := 0
 var _music_is_faster := false
 var _hud: RoundHud
+## The size of the Map the camera frames, framed again when the window changes shape.
+var _framed_size := Vector2i.ZERO
 var _pause_menu := PauseMenu.new()
 
 @onready var _camera: Camera3D = $Camera
@@ -68,6 +70,9 @@ var _pause_menu := PauseMenu.new()
 
 func _ready() -> void:
 	_pause_menu.quit_to_title.connect(quit_requested.emit)
+	get_viewport().size_changed.connect(func() -> void:
+		if _framed_size != Vector2i.ZERO:
+			_frame_map(_framed_size))
 	$Hud.add_child(_pause_menu)
 	start_match()
 
@@ -260,6 +265,7 @@ func _to_world(tile_position: Vector2) -> Vector3:
 ## Places the camera south of the Map, looking north and down, and backs it away until
 ## the whole Map (with a margin) is inside the view.
 func _frame_map(map_size: Vector2i) -> void:
+	_framed_size = map_size
 	var last := Vector2(map_size - Vector2i.ONE)
 	var corners: Array[Vector3] = []
 	for corner: Vector2 in [Vector2(-1, -1), Vector2(last.x + 1, -1), Vector2(-1, last.y + 1), last + Vector2.ONE]:

@@ -22,7 +22,7 @@ var _result_for_admin := false
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS  # F11 also works while paused
 	LocalPlayerController.register_actions()
-	_curtain.color = Color(0.0, 0.0, 0.0, 0.0)
+	_curtain.color = Color.BLACK  # the Splash leaves on black, and the first screen fades in
 	_curtain.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_curtain.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var top := CanvasLayer.new()

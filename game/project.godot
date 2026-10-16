@@ -11,8 +11,11 @@ config_version=5
 [application]
 
 config/name="BomberCat"
-run/main_scene="res://presentation/main.tscn"
+run/main_scene="res://presentation/splash.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
+boot_splash/bg_color=Color(0.24705882, 0.6627451, 0.9607843, 1)
+boot_splash/stretch_mode=4
+boot_splash/image="res://assets/splash/sky.png"
 
 [autoload]
 
@@ -29,10 +32,11 @@ window/size/viewport_height=1080
 window/size/window_width_override=1280
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
-window/stretch/aspect="keep"
+window/stretch/aspect="expand"
 
 [gui]
 
+theme/custom_font="res://assets/fonts/fredoka_medium.tres"
 theme/default_theme_scale=2.5
 
 [rendering]

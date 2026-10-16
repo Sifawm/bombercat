@@ -15,9 +15,29 @@
         background: #212b45;
       }
     </style>
+    <link rel="stylesheet" href="/src/splash.css" />
   </head>
   <body>
     <canvas id="canvas"></canvas>
+    <!-- On screen while the game downloads; the game's own Splash takes over (src/splash.ts). -->
+    <div id="splash">
+      <div id="splash-stage">
+        <div class="cloud"></div>
+        <div class="cloud"></div>
+        <div class="cloud"></div>
+        <div class="cloud"></div>
+        <div class="cloud"></div>
+        <div id="splash-frame">
+          <div class="burst"></div>
+          <div class="bomb"><div class="spark"></div></div>
+          <div class="bomber"></div>
+          <div class="cat"></div>
+          <div class="track"><div class="fill"></div></div>
+          <div class="label">Loading<span>.</span><span>.</span><span>.</span></div>
+          <div class="credit">Made with Godot</div>
+        </div>
+      </div>
+    </div>
     <!-- Godot's loader, written by `pnpm export:web`. It defines the global `Engine`. -->
     <script src="/godot/index.js"></script>
     <script type="module" src="/src/main.ts"></script>

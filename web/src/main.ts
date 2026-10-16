@@ -1,6 +1,7 @@
 import { bombercat, type Games, type Profile } from '@bombercat/shared';
 import { createPorter, defineGame } from '@porterkit/client';
 import { exposeToGodot } from '@porterkit/godot';
+import { showDownload } from './splash';
 
 /** Godot's loader, from the classic script of `index.html`. */
 declare const Engine: new (config: object) => { startGame(): Promise<void> };
@@ -22,9 +23,17 @@ const porter = createPorter<Games, Profile>({
 // Before the engine starts: the addon looks for the facade when it loads.
 exposeToGodot(porter);
 
+// Godot's loader reports a total only for files whose size it is given.
+const files = ['/godot/index.wasm', '/godot/index.pck'];
+const sizes = await Promise.all(
+  files.map((file) => fetch(file, { method: 'HEAD' }).then((r) => Number(r.headers.get('content-length')))),
+);
+
 await new Engine({
   executable: '/godot/index',
+  fileSizes: Object.fromEntries(files.map((file, i) => [file, sizes[i]])),
   canvas: document.getElementById('canvas'),
   canvasResizePolicy: 2,
   focusCanvas: true,
+  onProgress: showDownload,
 }).startGame();
