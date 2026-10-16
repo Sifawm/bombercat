@@ -266,7 +266,7 @@ func _chip(user: Dictionary, at: int) -> PanelContainer:
 	var sky := Panel.new()
 	sky.size = avatar.custom_minimum_size
 	sky.add_theme_stylebox_override("panel", Ui.rounded(Ui.SKY, 32, 0))
-	sky.clip_children = CanvasItem.CLIP_CHILDREN_ONLY
+	sky.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
 	avatar.add_child(sky)
 	var cat := Ui.picture(Roster.portrait(int(user.profile.cat)), Rect2(1, 4, 63, 96), sky)
 	cat.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
