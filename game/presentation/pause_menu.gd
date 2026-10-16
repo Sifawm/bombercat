@@ -28,28 +28,29 @@ func _init() -> void:
 		InputMap.action_add_event(PAUSE_ACTION, start)
 	process_mode = Node.PROCESS_MODE_WHEN_PAUSED
 	visible = false
-	color = Color(0.0, 0.0, 0.0, 0.7)
-	var column := Ui.centred_column(self)
-	column.add_child(Ui.label("Paused", Ui.TITLE_SIZE))
-	_resume = Ui.button("Resume", _resume_or_ask)
-	column.add_child(_resume)
-	column.add_child(Ui.button("How to Play", _show_how_to_play))
+	color = Color(Ui.INK, 0.7)
+	var column := Ui.centred_column(self, 40)
+	column.add_child(Ui.title("Paused"))
+	var menu := VBoxContainer.new()
+	menu.add_theme_constant_override("separation", 20)
+	column.add_child(menu)
+	_resume = Ui.button("Resume", _resume_or_ask, true)
+	_resume.custom_minimum_size = Vector2(520, 112)
+	menu.add_child(_resume)
+	menu.add_child(_item(Ui.button("How to Play", _show_how_to_play)))
 	for bus: String in ["Music", "Effects"]:
 		var index := AudioServer.get_bus_index(bus)
-		var toggle := CheckButton.new()
-		toggle.text = bus
-		toggle.button_pressed = not AudioServer.is_bus_mute(index)
-		toggle.toggled.connect(func(on: bool) -> void: AudioServer.set_bus_mute(index, not on))
-		column.add_child(toggle)
-	_quit = Ui.button("Quit to Title", func() -> void:
+		menu.add_child(_item(Ui.toggle(bus, not AudioServer.is_bus_mute(index),
+				func(on: bool) -> void: AudioServer.set_bus_mute(index, not on))))
+	_quit = _item(Ui.button("Quit to Title", func() -> void:
 		get_tree().paused = false
-		quit_to_title.emit())
-	column.add_child(_quit)
+		quit_to_title.emit()))
+	menu.add_child(_quit)
 
 
 ## Adds a button above the one that quits.
 func add_action(text: String, action: Callable) -> Button:
-	var button := Ui.button(text, action)
+	var button := _item(Ui.button(text, action))
 	_quit.add_sibling(button)
 	_quit.get_parent().move_child(button, _quit.get_index())
 	return button
@@ -58,6 +59,12 @@ func add_action(text: String, action: Callable) -> Button:
 ## Says where quitting leads, where that is not the title.
 func name_quit(text: String) -> void:
 	_quit.text = text
+
+
+## A row of the menu, as wide as Resume.
+static func _item(control: Button) -> Button:
+	control.custom_minimum_size = Vector2(520, 88)
+	return control
 
 
 func open() -> void:

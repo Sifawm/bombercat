@@ -186,6 +186,43 @@ static func pips(won: int, count: int) -> HBoxContainer:
 	return row
 
 
+## The design's Toggle: a cream row named on its left, pressed anywhere to flip the switch on its
+## right, green with the knob right when on, inked with the knob left when off.
+static func toggle(text: String, on: bool, on_toggled: Callable) -> Button:
+	var node := button(text, func() -> void: pass)
+	node.toggle_mode = true
+	node.button_pressed = on
+	node.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	for state: String in ["normal", "focus"]:
+		node.get_theme_stylebox(state).content_margin_left = 32
+	var switch := Panel.new()
+	switch.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
+	switch.offset_left = -132
+	switch.offset_right = -32
+	switch.offset_top = -28
+	switch.offset_bottom = 28
+	switch.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	node.add_child(switch)
+	var knob := Panel.new()
+	knob.size = Vector2(40, 40)
+	var knob_box := rounded(CREAM, 20, 0)
+	knob_box.set_border_width_all(6)
+	knob_box.border_color = INK
+	knob.add_theme_stylebox_override("panel", knob_box)
+	knob.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	switch.add_child(knob)
+	var show := func(now_on: bool) -> void:
+		var box := rounded(GREEN if now_on else INK, 28, 0)
+		box.set_border_width_all(6)
+		box.border_color = INK
+		switch.add_theme_stylebox_override("panel", box)
+		knob.position = Vector2(54 if now_on else 6, 8)
+	show.call(on)
+	node.toggled.connect(show)
+	node.toggled.connect(on_toggled)
+	return node
+
+
 ## A small round cream button with a glyph, ringed when focused.
 static func round_button(glyph: String, diameter: int, on_pressed: Callable) -> Button:
 	var node := Button.new()
