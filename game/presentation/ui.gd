@@ -141,9 +141,10 @@ static func badge(text: String, dark: bool) -> PanelContainer:
 	return node
 
 
-## The design's portrait: a picture on a rounded square of `color`, standing on its bottom edge
-## and inked round. `inset` is the room the picture leaves on each side.
-static func portrait(path: String, side: int, inset: int, color: Color, radius: int = 40) -> Control:
+## The design's portrait: a picture on a rounded square of `color`, inked round, standing on its
+## bottom edge or `centred`. `inset` is the room the picture leaves on each side.
+static func portrait(path: String, side: int, inset: int, color: Color, radius: int = 40,
+		centred: bool = false) -> Control:
 	var node := Control.new()
 	node.custom_minimum_size = Vector2(side, side)
 	var back := Panel.new()
@@ -152,7 +153,7 @@ static func portrait(path: String, side: int, inset: int, color: Color, radius: 
 	back.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
 	node.add_child(back)
 	var size := side - 2 * inset
-	picture(path, Rect2(inset, side - size, size, size), back)
+	picture(path, Rect2(inset, inset if centred else side - size, size, size), back)
 	var ring := Panel.new()
 	ring.size = node.custom_minimum_size
 	var stroke := rounded(Color.TRANSPARENT, radius, 0)

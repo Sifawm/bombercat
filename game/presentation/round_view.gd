@@ -2,7 +2,7 @@ class_name RoundView
 extends Node3D
 ## Presentation of a Match on a Map: places the models where the rules say, turns the rules'
 ## signals into effects and sound, draws the HUD and shows each Round's result. It decides
-## nothing.
+## nothing. The countdown is told in the middle of the picture.
 
 signal match_finished(game_match: Match)
 signal quit_requested
@@ -427,12 +427,12 @@ func _show_final_elimination(where: Vector3) -> void:
 
 func _on_round_ended(winner: int) -> void:
 	if winner == Round.DRAW:
-		_result_label.text = "Draw!"
+		_hud.show_result(winner, -1, "", _match.round_number)
 		for player in _round.cats.size():
 			if _round.cats[player].alive:
 				_cat_views[player].play("idle")
 	else:
-		_result_label.text = "%s wins the Round!" % _player_name(winner)
+		_hud.show_result(winner, cat_picks[winner], _player_name(winner), _match.round_number)
 		_cat_views[winner].play("win")
 		_throw_confetti()
 		Audio.play(&"victory")

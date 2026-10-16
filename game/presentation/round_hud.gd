@@ -2,12 +2,15 @@ class_name RoundHud
 extends Control
 ## The design's RoundHud over the Round: each Player's PlayerPanel in a corner of its own, by
 ## index (top left, top right, bottom left, bottom right), and between the top two the
-## RoundTimer over the Round's number.
+## RoundTimer over the Round's number, or the RoundBanner once the Round is over.
 
 ## How far the parts of the HUD stand from the edges of the picture.
 const MARGIN := 24
 ## The corner of each Player's panel, by index.
 const CORNERS: Array[LayoutPreset] = [PRESET_TOP_LEFT, PRESET_TOP_RIGHT, PRESET_BOTTOM_LEFT, PRESET_BOTTOM_RIGHT]
+## How far the RoundBanner falls from, over the picture, and for how long.
+const BANNER_DROP := 300.0
+const BANNER_SECONDS := 0.6
 
 var _panels: Array[PlayerPanel] = []
 var _status := VBoxContainer.new()
@@ -16,6 +19,7 @@ var _time := Ui.label("", 64, Ui.INK, Ui.LILITA)
 var _round_badge := Ui.badge("", true)
 var _calm := _timer_box(Ui.YELLOW)
 var _hurried := _timer_box(Ui.RED)
+var _banner: Control
 
 
 ## `cat_picks` holds the index in Roster.CATS of each Player's Cat, and `names` what to call
@@ -71,9 +75,13 @@ func show_wins(wins: Array[int], rounds_to_win: int) -> void:
 		_panels[player].show_wins(wins[player], rounds_to_win)
 
 
-## A new Round: its number under the timer.
+## A new Round: its number under the timer, where the last one's banner was.
 func show_round(number: int) -> void:
 	(_round_badge.get_child(0) as Label).text = "Round %d" % number
+	_status.visible = true
+	if _banner != null:
+		_banner.queue_free()
+		_banner = null
 
 
 ## The time left; in a hurry it turns red and swells by `pulse` of its size.
@@ -86,6 +94,59 @@ func show_time(seconds: int, hurry: bool, pulse: float) -> void:
 
 func show_cat(player: int, cat: CatState, config: GameConfig) -> void:
 	_panels[player].show_cat(cat, config)
+
+
+## The design's RoundBanner falls in the timer's place: who won the Round, with the face of
+## its Cat (`pick` in Roster.CATS), or that it was a Draw.
+func show_result(winner: int, pick: int, winner_name: String, number: int) -> void:
+	_status.visible = false
+	var won := winner != Round.DRAW
+	_banner = PanelContainer.new()
+	var box := Ui.claimed(Ui.CREAM if won else Ui.YELLOW, Roster.PLAYER_COLORS[winner] if won else Ui.INK, 40)
+	box.set_content_margin_all(20)
+	box.content_margin_left = 48
+	_banner.add_theme_stylebox_override("panel", box)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 24)
+	_banner.add_child(row)
+	if won:
+		row.add_child(Ui.portrait(Roster.face(pick), 112, 6, Roster.PLAYER_COLORS[winner]))
+	else:
+		row.add_child(Ui.portrait("res://assets/icons/bomb.png", 112, 12, Ui.SKY, 40, true))
+	var texts := VBoxContainer.new()
+	texts.add_theme_constant_override("separation", 4)
+	var badge := Ui.badge("Round %d" % number, true)
+	badge.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	texts.add_child(badge)
+	var headline := HBoxContainer.new()
+	headline.add_theme_constant_override("separation", 24)
+	headline.add_child(Ui.label("%s wins the Round!" % winner_name if won else "Draw!", 88, Ui.INK, Ui.LILITA))
+	if not won:
+		var detail := Ui.label("Nobody scores.\nThe Round is replayed.", 32, Ui.INK, Ui.FREDOKA_MEDIUM)
+		detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		detail.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		headline.add_child(detail)
+	texts.add_child(headline)
+	row.add_child(texts)
+	_banner.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_banner.offset_top = MARGIN
+	_banner.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	add_child(_banner)
+	# Between the top panels, smaller when a long name would not fit there.
+	var room := get_viewport_rect().size.x - 2.0 * (MARGIN * 2 + _widest_top_panel())
+	var needed := _banner.get_combined_minimum_size()
+	_banner.pivot_offset = Vector2(needed.x / 2.0, 0.0)
+	_banner.scale = Vector2.ONE * minf(1.0, room / needed.x)
+	_banner.position.y = -BANNER_DROP
+	_banner.create_tween().tween_property(_banner, "position:y", float(MARGIN), BANNER_SECONDS) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func _widest_top_panel() -> float:
+	var widest := 0.0
+	for player in mini(_panels.size(), 2):
+		widest = maxf(widest, _panels[player].get_combined_minimum_size().x)
+	return widest
 
 
 ## The design's RoundTimer: the time on a yellow surface, or a red one in a hurry.
