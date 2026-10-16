@@ -22,8 +22,6 @@ export const CURSES: Record<string, CurseEffect> = {
 export interface Powerup {
   /** Changes `cat` for the rest of the Round. `random` is the Round's only source of chance. */
   apply(cat: Cat, config: GameConfig, random: RandomInt): void;
-  /** Whether a Cat that collected this Powerup still has it. Most last the whole Round. */
-  isHeldBy?(cat: Cat): boolean;
 }
 
 /** Every Powerup by id. Adding a Powerup means adding an entry here (and its model in the game). */
@@ -39,18 +37,14 @@ export const POWERUPS: Record<string, Powerup> = {
   },
   paw_swipe: { apply: (cat) => void (cat.pawSwipe = true) },
   // A flag, not a count: Nine Lives does not stack.
-  nine_lives: { apply: (cat) => void (cat.nineLives = true), isHeldBy: (cat) => cat.nineLives },
+  nine_lives: { apply: (cat) => void (cat.nineLives = true) },
   cucumber: {
     apply(cat, config, random) {
       const curses = Object.keys(CURSES);
       cat.curse = { id: curses[random(0, curses.length - 1)], timeLeft: config.curseDuration };
     },
-    isHeldBy: (cat) => cat.curse !== null,
   },
 };
-
-/** The ids of the Powerups `cat` collected and still has, in the order it collected them. */
-export const heldBy = (cat: Cat): string[] => cat.collected.filter((id) => POWERUPS[id].isHeldBy?.(cat) ?? true);
 
 /**
  * Hides a Map's Powerup Pool in its Crates: the quantities are fixed, the Crates are random.

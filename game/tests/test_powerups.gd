@@ -306,26 +306,3 @@ func test_a_cat_keeps_count_of_its_bombs_crates_and_powerups() -> void:
 	check_eq(game_round.cats[0].crates_destroyed, 1, "Crates destroyed")
 	check_eq(game_round.cats[0].collected, [&"yarn_ball"] as Array[StringName], "Powerups collected")
 	check_eq(game_round.cats[1].crates_destroyed, 0, "the other Cat destroyed nothing")
-
-
-func test_a_cat_holds_the_powerups_it_collected() -> void:
-	var game_round := round_with_collected(&"yarn_ball")
-	check_eq(Powerup.held_by(game_round.cats[0]), [&"yarn_ball"] as Array[StringName], "holding the Yarn Ball")
-	check_eq(Powerup.held_by(game_round.cats[1]), [] as Array[StringName], "the other Cat holds nothing")
-
-
-func test_nine_lives_is_no_longer_held_once_spent() -> void:
-	var game_round := round_with_collected(&"nine_lives")
-	check_eq(Powerup.held_by(game_round.cats[0]), [&"nine_lives"] as Array[StringName], "held")
-	game_round.place_bomb(0)
-	advance(game_round, 1.6)
-	check_eq(Powerup.held_by(game_round.cats[0]), [] as Array[StringName], "spent")
-
-
-func test_cucumber_is_held_only_while_its_curse_lasts() -> void:
-	var config := quick_config()
-	config.curse_duration = 1.0
-	var game_round := round_with_collected(&"cucumber", config)
-	check_eq(Powerup.held_by(game_round.cats[0]), [&"cucumber"] as Array[StringName], "cursed")
-	advance(game_round, 1.1)
-	check_eq(Powerup.held_by(game_round.cats[0]), [] as Array[StringName], "the Curse is over")

@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import type { GameConfig } from './config';
 import type { Vec } from './map';
-import { distributePowerups, heldBy } from './powerups';
+import { distributePowerups } from './powerups';
 import { seededRandomInt } from './config';
 import { config, DOWN, expectPosition, LEFT, makeRound, RIGHT, STEP, STOP, type TestRound, UP } from './testing';
 
@@ -276,27 +276,6 @@ test('a Cat keeps count of its Bombs, Crates and Powerups', () => {
   const round = roundWithCollected('yarn_ball');
   expect(round.cats[0]).toMatchObject({ bombsPlaced: 1, cratesDestroyed: 1, collected: ['yarn_ball'] });
   expect(round.cats[1].cratesDestroyed).toBe(0);
-});
-
-test('a Cat holds the Powerups it collected', () => {
-  const round = roundWithCollected('yarn_ball');
-  expect(heldBy(round.cats[0])).toEqual(['yarn_ball']);
-  expect(heldBy(round.cats[1])).toEqual([]);
-});
-
-test('Nine Lives is no longer held once spent', () => {
-  const round = roundWithCollected('nine_lives');
-  expect(heldBy(round.cats[0])).toEqual(['nine_lives']);
-  round.placeBomb(0);
-  round.advance(1.6);
-  expect(heldBy(round.cats[0])).toEqual([]);
-});
-
-test('Cucumber is held only while its Curse lasts', () => {
-  const round = roundWithCollected('cucumber', quick({ curseDuration: 1 }));
-  expect(heldBy(round.cats[0])).toEqual(['cucumber']);
-  round.advance(1.1);
-  expect(heldBy(round.cats[0])).toEqual([]);
 });
 
 const POOL = { yarn_ball: 3, tuna_can: 2, cucumber: 1 };
