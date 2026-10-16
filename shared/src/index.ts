@@ -166,7 +166,7 @@ export type Bombercat = {
     resume: undefined;
     /** Asks for `synced`: a client that starts drawing a Round the others are already in. */
     sync: undefined;
-    /** The Admin takes the Room to configure the next Match, and back to choosing Cats. */
+    /** The Admin takes the Room to configure the next Match, and back to choosing Cats: from there or from the result of a Match. */
     configure: undefined;
     backToRoom: undefined;
   };
@@ -182,6 +182,8 @@ export type Bombercat = {
     meowed: { player: number };
     /** Whether the Room is configuring the next Match now. */
     configuring: boolean;
+    /** The Admin took everyone from the result of the Match back to choosing Cats: the state has no Round any more. */
+    resultClosed: null;
   };
   pauseReason: null;
   /** `winner` is a Player index, or null when the Match was left without one. */

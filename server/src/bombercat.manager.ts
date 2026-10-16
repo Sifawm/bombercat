@@ -8,6 +8,7 @@ import {
   type GameManager as Manager,
   handlersOf,
   type OnContinue,
+  type OnEnd,
   type OnPause,
   type OnStart,
   type OnTick,
@@ -38,8 +39,8 @@ const On = handlersOf<Games, 'bombercat'>();
 interface Memory {
   /** Null until `onStart`. */
   match: Match | null;
-  /** A Round is counted down to, played, and then left on screen for a moment. */
-  phase: 'countdown' | 'playing' | 'over';
+  /** A Round is counted down to, played, and then left on screen for a moment; the last one stays, with the result. */
+  phase: 'countdown' | 'playing' | 'over' | 'ended';
   paused: boolean;
   /** By Player index: the Inputs still to apply, the direction of the last one and its number. */
   inputs: Input[][];
@@ -80,6 +81,7 @@ export class BombercatManager
     OnTick<Ctx>,
     OnPause<Ctx>,
     OnContinue<Ctx>,
+    OnEnd<Ctx>,
     OnUserDisconnected<Ctx>,
     OnUserLeft<Ctx>
 {
@@ -167,6 +169,10 @@ export class BombercatManager
     ctx.memory.paused = false;
   }
 
+  onEnd(ctx: Ctx) {
+    ctx.memory.phase = 'ended';
+  }
+
   /** Its Cat stands still, where an Explosion can reach it, until its User is back. */
   onUserDisconnected(ctx: Ctx, user: MatchUser) {
     const player = ctx.game.state.players.indexOf(user.name);
@@ -233,11 +239,16 @@ export class BombercatManager
     this.setConfiguring(ctx, true);
   }
 
+  /** The Admin takes everyone back to choosing Cats: from the settings, or from the result of the last Match. */
   @AdminOnly()
   @AnyTime()
   @On('backToRoom')
   backToRoom(ctx: Ctx) {
     this.setConfiguring(ctx, false);
+    if (ctx.memory.phase !== 'ended') return;
+    // A Match without its Round has no result to show.
+    ctx.game.state.round = null;
+    ctx.room.broadcast('resultClosed', null);
   }
 
   private setConfiguring(ctx: Ctx, configuring: boolean) {

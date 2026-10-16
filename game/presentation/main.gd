@@ -13,8 +13,6 @@ var _picks: Array[int]
 ## The screen of a Room that is shown or on its way in: "room", "configure", "match" or
 ## "result"; "" out of a Room.
 var _room_screen := ""
-## Whether the User chose to leave the result of the last Match for the Waiting Room.
-var _result_left := false
 ## Whether the result on screen was drawn for the Admin, who alone may ask for a Rematch.
 var _result_for_admin := false
 
@@ -89,7 +87,6 @@ func _on_connection_changed(connection: Dictionary) -> void:
 		_show_room_screen()
 	elif connection.status == "closed" and _room_screen != "":
 		_room_screen = ""
-		_result_left = false
 		get_tree().paused = false
 		if not Online.unreachable():  # its Room may still be there to come back to
 			Online.set_room_in_address("")
@@ -97,7 +94,7 @@ func _on_connection_changed(connection: Dictionary) -> void:
 
 
 ## Shows the screen the Room's Match calls for: the Match while it is played, its result
-## once it has ended, the Waiting Room otherwise.
+## once it has ended until the Admin takes everyone back, the Waiting Room otherwise.
 func _show_room_screen() -> void:
 	if Online.porter.connection.status != "connected":
 		return
@@ -108,8 +105,7 @@ func _show_room_screen() -> void:
 	if game.state.round != null:
 		if status == "running" or status == "paused":
 			wanted = "match"
-			_result_left = false
-		elif status == "ended" and not _result_left:
+		elif status == "ended":
 			wanted = "result"
 	if wanted == "room" and game.state.configuring:
 		wanted = "configure"
@@ -143,12 +139,10 @@ func _online_result(game: Dictionary) -> MatchResult:
 	var names := PackedStringArray(game.state.players)
 	var picks: Array[int] = []
 	picks.assign(Array(names).map(Online.cat_of))
-	var is_admin: bool = Online.porter.room.isAdmin
-	var result := MatchResult.new(game_match, picks, names, "Back to the Room", is_admin)
-	result.rematch_pressed.connect(func() -> void: Online.porter.send("porter:startMatch"))
-	result.cat_select_pressed.connect(func() -> void:
-		_result_left = true
-		_show_room_screen())
+	var room: Dictionary = Online.porter.room
+	var result := MatchResult.new(game_match, picks, names, "Back to the Room", "" if room.isAdmin else room.admin)
+	result.rematch_pressed.connect(Online.porter.send.bind("porter:startMatch"))
+	result.cat_select_pressed.connect(Online.porter.send.bind("backToRoom"))
 	return result
 
 

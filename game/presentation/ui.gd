@@ -176,6 +176,14 @@ static func pip(won: bool) -> Panel:
 	return node
 
 
+## A row of `count` WinPips, the first `won` of them yellow.
+static func pips(won: int, count: int) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	for at in count:
+		row.add_child(pip(at < won))
+	return row
+
 
 ## A small round cream button with a glyph, ringed when focused.
 static func round_button(glyph: String, diameter: int, on_pressed: Callable) -> Button:

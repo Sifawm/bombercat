@@ -46,6 +46,7 @@ function client() {
         scored: (game, state) => ({ ...game, state }),
         synced: (game, state) => ({ ...game, state }),
         configuring: (game, configuring) => ({ ...game, state: { ...game.state, configuring } }),
+        resultClosed: (game) => ({ ...game, state: { ...game.state, round: null } }),
       }),
     },
   });
@@ -195,6 +196,14 @@ test('a Match: Inputs move a Cat a Tick each, its Bomb kills it and the other Pl
   const cleo = await join('Cleo', ana.room!.id);
   expect(state(cleo)).toMatchObject({ wins: [0, 1], bombsPlaced: [1, 0], players: ['Ana', 'Bea'] });
   expect(state(cleo).round!.finished).toBe(true);
+
+  // Only the Admin takes everyone from the result back to choosing Cats.
+  const rejected = new Promise((resolve) => bea.on('porter:messageRejected', resolve));
+  bea.send('backToRoom');
+  expect(await rejected).toEqual({ rejected: 'backToRoom', reason: 'notAdmin' });
+  ana.send('backToRoom');
+  await until(cleo, () => state(cleo).round === null);
+  await until(bea, () => state(bea).round === null);
 }, 15_000);
 
 test('any Player pauses the Match and sets it going again; a User that only watches does not', async () => {
