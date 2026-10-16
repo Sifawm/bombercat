@@ -10,8 +10,8 @@ var _screen: Node
 var _curtain := ColorRect.new()
 ## The index in Roster.CATS of each Player's Cat, kept for a Rematch.
 var _picks: Array[int]
-## The screen of a Room that is shown or on its way in: "room", "match" or "result"; "" out
-## of a Room.
+## The screen of a Room that is shown or on its way in: "room", "configure", "match" or
+## "result"; "" out of a Room.
 var _room_screen := ""
 ## Whether the User chose to leave the result of the last Match for the Waiting Room.
 var _result_left := false
@@ -111,6 +111,8 @@ func _show_room_screen() -> void:
 			_result_left = false
 		elif status == "ended" and not _result_left:
 			wanted = "result"
+	if wanted == "room" and game.state.configuring:
+		wanted = "configure"
 	var is_admin: bool = Online.porter.room.isAdmin
 	# The result is drawn again for a User that becomes the Admin while looking at it.
 	if wanted == _room_screen and not (wanted == "result" and is_admin != _result_for_admin):
@@ -126,6 +128,8 @@ func _show_room_screen() -> void:
 			_show(view, false)  # it plays the Round music itself
 		"result":
 			_show(_online_result(game))
+		"configure":
+			_show(ConfigureMatch.new())
 		_:
 			_show(WaitingRoom.new())
 

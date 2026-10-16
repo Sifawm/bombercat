@@ -45,6 +45,7 @@ function client() {
         roundStarted: (game, state) => ({ ...game, state }),
         scored: (game, state) => ({ ...game, state }),
         synced: (game, state) => ({ ...game, state }),
+        configuring: (game, configuring) => ({ ...game, state: { ...game.state, configuring } }),
       }),
     },
   });
@@ -104,6 +105,33 @@ test('a User changes its Cat for one nobody brings', async () => {
   // Ana takes the Cat Bea left.
   ana.send('porter:updateProfile', { profile: { cat: 1 } });
   await until(bea, () => bea.room!.users[0].profile.cat === 1);
+});
+
+test('the Admin takes everyone to configure the Match and back, and a Match brings them back', async () => {
+  const alone = await room();
+  const refused = new Promise((resolve) => alone.ana.on('porter:messageRejected', resolve));
+  alone.ana.send('configure');
+  expect(await refused).toEqual({ rejected: 'configure', reason: { code: 'game', reason: 'tooFewUsers' } });
+
+  const { roomId, ana, rest } = await room('Bea');
+  const [bea] = rest;
+  const rejected = new Promise((resolve) => bea.on('porter:messageRejected', resolve));
+  bea.send('configure');
+  expect(await rejected).toEqual({ rejected: 'configure', reason: 'notAdmin' });
+
+  ana.send('configure');
+  await until(bea, () => state(bea).configuring);
+  // Whoever comes in meanwhile is in it too.
+  const cleo = await join('Cleo', roomId);
+  expect(state(cleo).configuring).toBe(true);
+  ana.send('backToRoom');
+  await until(cleo, () => !state(cleo).configuring);
+
+  ana.send('configure');
+  await until(bea, () => state(bea).configuring);
+  ana.send('porter:startMatch');
+  await until(bea, () => status(bea) === 'running');
+  expect(state(bea).configuring).toBe(false);
 });
 
 /** Ana, the Admin, and whoever else is named, in a Room together. */

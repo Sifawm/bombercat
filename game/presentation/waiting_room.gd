@@ -8,8 +8,6 @@ extends Control
 const CAPACITY := 4
 const REJECTIONS: Dictionary[String, String] = {
 	"invalidProfile": "That Cat is taken",
-	"belowMinPlayers": "A Match needs at least 2 Users",
-	"tooManyUsers": "This Map has no room for so many Users",
 	"tooFewUsers": "A Match needs at least 2 Users connected",
 }
 const TITLE := Vector2(64, 48)
@@ -18,7 +16,10 @@ const RECONNECTING := Rect2(64, 176, 1792, 80)
 const ROSTER := Rect2(64, 154, 1792, 766)
 const FOOTER := Rect2(64, 920, 1792, 112)
 const LEAVE := Rect2(64, 932, 360, 88)
-const MAIN := Rect2(1256, 920, 600, 112)
+## Between Leave and the main action, where an error is told.
+const ERROR := Rect2(448, 920, 784, 112)
+## The foot's right half, where the main action or what the others wait for stands.
+const MAIN := Rect2(1072, 920, 784, 112)
 
 var _cards: Array[CatCard] = []
 var _copy := Ui.button("Copy Invite Link", _copy_link)
@@ -27,8 +28,9 @@ var _lock := Ui.button("", _toggle_lock)
 var _locked := Ui.badge("Room locked", true)
 var _reconnecting := CenterContainer.new()
 var _count := Ui.label("", 32, Ui.INK, Ui.LILITA)
+var _count_box := CenterContainer.new()
 var _footer_notice := CenterContainer.new()
-var _start := Ui.button("Start Match", _send.bind("porter:startMatch"), true)
+var _start := Ui.button("Configure Match", _send.bind("configure"), true)
 var _waiting := Ui.label("", 32, Ui.INK, Ui.FREDOKA_SEMIBOLD)
 ## Whether a change is waiting to be drawn: several may come in one frame.
 var _stale := false
@@ -93,15 +95,18 @@ func _footer(frame: Control) -> void:
 	leave.position = LEAVE.position
 	leave.custom_minimum_size = LEAVE.size
 	frame.add_child(leave)
-	_footer_notice.position = FOOTER.position
-	_footer_notice.size = FOOTER.size
-	_footer_notice.add_child(_count)
+	_count_box.position = FOOTER.position
+	_count_box.size = FOOTER.size
+	_count_box.add_child(_count)
+	frame.add_child(_count_box)
+	_footer_notice.position = ERROR.position
+	_footer_notice.size = ERROR.size
 	frame.add_child(_footer_notice)
 	var main := HBoxContainer.new()
 	main.position = MAIN.position
 	main.size = MAIN.size
 	main.alignment = BoxContainer.ALIGNMENT_END
-	_start.custom_minimum_size = MAIN.size
+	_start.custom_minimum_size = Vector2(600, 112)
 	main.add_child(_start)
 	_waiting.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_waiting.size_flags_horizontal = Control.SIZE_SHRINK_END
@@ -156,7 +161,7 @@ func _render() -> void:
 	_count.text = "%d / %d players" % [room.users.size(), CAPACITY]
 	_start.visible = room.isAdmin
 	_waiting.visible = not room.isAdmin
-	_waiting.text = "Waiting for %s to start the Match..." % room.admin
+	_waiting.text = "Waiting for %s to configure the Match..." % room.admin
 	# A control that had the focus and can no longer take it hands it on.
 	var kick := find_child(kick_focused, true, false) as Control if kick_focused.begins_with("kick") else null
 	if kick != null:
@@ -204,8 +209,7 @@ func _rejected(rejection: Dictionary) -> void:
 
 func _clear_error() -> void:
 	for child in _footer_notice.get_children():
-		if child != _count:
-			child.queue_free()
+		child.queue_free()
 	_count.show()
 
 

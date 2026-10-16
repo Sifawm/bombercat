@@ -1,4 +1,6 @@
 import {
+  AdminOnly,
+  AnyTime,
   type CanStart,
   type CreateMemory,
   type GameContext,
@@ -222,6 +224,27 @@ export class BombercatManager
     user.send('synced', ctx.game.state);
   }
 
+  /** The Admin takes everyone to the settings of the next Match, until it goes back or starts it. */
+  @AdminOnly()
+  @AnyTime()
+  @On('configure')
+  configure(ctx: Ctx) {
+    if (ctx.room.connected.length < bombercat.minPlayers) throw ctx.reject('tooFewUsers');
+    this.setConfiguring(ctx, true);
+  }
+
+  @AdminOnly()
+  @AnyTime()
+  @On('backToRoom')
+  backToRoom(ctx: Ctx) {
+    this.setConfiguring(ctx, false);
+  }
+
+  private setConfiguring(ctx: Ctx, configuring: boolean) {
+    ctx.game.state.configuring = configuring;
+    ctx.room.broadcast('configuring', configuring);
+  }
+
   /** The Player a User is in this Match, or -1: it watches, or it took the name of a Player that left. */
   private playerOf(ctx: Ctx, user: MatchUser): number {
     const player = ctx.game.state.players.indexOf(user.name);
@@ -249,7 +272,7 @@ export class BombercatManager
   /** Keeps the state current, so a User that joins or comes back gets the Match as it is. */
   private writeState(ctx: Ctx) {
     const match = ctx.memory.match!;
-    const state: Omit<MatchState, 'players'> = {
+    const state: Omit<MatchState, 'players' | 'configuring'> = {
       gone: [...ctx.memory.gone],
       wins: [...match.wins],
       bombsPlaced: [...match.bombsPlaced],

@@ -125,6 +125,8 @@ export interface MatchState {
   cratesDestroyed: number[];
   powerupsCollected: number[];
   round: RoundSnapshot | null;
+  /** Whether the Admin has taken the Room to configure the next Match. A Match starts without it. */
+  configuring: boolean;
 }
 
 /** What a Player asks of its Cat for one Tick. `seq` numbers them, for Prediction (ADR 0004). */
@@ -162,6 +164,9 @@ export type Bombercat = {
     resume: undefined;
     /** Asks for `synced`: a client that starts drawing a Round the others are already in. */
     sync: undefined;
+    /** The Admin takes the Room to configure the next Match, and back to choosing Cats. */
+    configure: undefined;
+    backToRoom: undefined;
   };
   server: {
     /** A Round is about to start, after a countdown: the whole state, which replaces the client's. */
@@ -173,6 +178,8 @@ export type Bombercat = {
     moved: Moved;
     happened: RoundEvent[];
     meowed: { player: number };
+    /** Whether the Room is configuring the next Match now. */
+    configuring: boolean;
   };
   pauseReason: null;
   /** `winner` is a Player index, or null when the Match was left without one. */
@@ -210,6 +217,7 @@ export const bombercat = {
     cratesDestroyed: [],
     powerupsCollected: [],
     round: null,
+    configuring: false,
   }),
   createUserData: nothing,
 } satisfies GameDefinition<Games, 'bombercat'>;

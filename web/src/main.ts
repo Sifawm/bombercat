@@ -16,6 +16,7 @@ const porter = createPorter<Games, Profile>({
       roundStarted: (game, state) => ({ ...game, state }),
       scored: (game, state) => ({ ...game, state }),
       synced: (game, state) => ({ ...game, state }),
+      configuring: (game, configuring) => ({ ...game, state: { ...game.state, configuring } }),
     }),
   },
 });
