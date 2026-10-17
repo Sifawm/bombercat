@@ -2,14 +2,15 @@ class_name CatSelect
 extends Control
 ## The design's CatSelect: both Players choose their Cat at the same time, each with its own
 ## cursor, using the keys or gamepad they play with: left and right to move, the bomb button to
-## confirm. Once both are ready the Match starts, with no way back.
+## confirm. Once both are ready they go on to choose the Map; Map Select's Back brings them here again.
 
-## Emitted after the countdown with the index in Roster.CATS of each Player's Cat.
+## Emitted once both are ready, with the index in Roster.CATS of each Player's Cat.
 signal confirmed(picks: Array[int])
 signal cancelled
 
 const PLAYERS := 2
-const COUNTDOWN_SECONDS := 3
+## How long both Cats are seen ready before the Map is chosen.
+const READY_SECONDS := 0.6
 const TITLE := Rect2(64, 48, 1792, 106)
 const ROW := Rect2(64, 178, 1792, 718)
 const FOOTER := Rect2(64, 920, 1792, 112)
@@ -93,7 +94,7 @@ func _process(_delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel") and _picks.has(-1):  # no way back once both are ready
+	if event.is_action_pressed("ui_cancel") and _picks.has(-1):  # both ready: already on the way to Map Select
 		Audio.play(&"ui_cancel")
 		cancelled.emit()
 
@@ -122,25 +123,12 @@ func _confirm(player: int) -> void:
 	Ui.bounce(_cards[pick].button)  # its dance would jump out of the card
 	if not _picks.has(-1):
 		set_process(false)
-		_start_countdown()
+		_go_on()
 
 
-## Tells the seconds left on a Notice where the way back was, and starts the Match after them.
-func _start_countdown() -> void:
-	for controls in _controls:
-		controls.modulate.a = 0.5
-	_middle.remove_child(_back)
-	_back.queue_free()
-	var notice := Ui.notice(Ui.Tone.PROGRESS, "")
-	_middle.add_child(notice)
-	var message: Label = notice.get_child(0).get_child(1)
-	var countdown := create_tween()
-	for second in range(COUNTDOWN_SECONDS, 0, -1):
-		countdown.tween_callback(func() -> void:
-			message.text = "Starting in %d…" % second
-			Audio.play(&"countdown"))
-		countdown.tween_interval(0.7)
-	countdown.tween_callback(func() -> void: confirmed.emit(_picks))
+## A moment to see both Cats ready, then on to choosing the Map.
+func _go_on() -> void:
+	create_tween().tween_callback(func() -> void: confirmed.emit(_picks)).set_delay(READY_SECONDS)
 
 
 ## Draws each card free, or in the colour of the cursor on it, under the tag of each Player there.
