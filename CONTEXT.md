@@ -52,6 +52,10 @@ _Avoid_: Box, soft block, brick
 A Floor Tile where a Cat starts each Round. A Map declares several; a Match uses one per Player, picking the ones farthest apart.
 _Avoid_: Start position, spawn
 
+**Portal**:
+A Floor Tile linked to the other Portal of its colour. A Cat whose centre reaches its centre, or a pushed Bomb that reaches it, goes on from the other one; Explosions pass over it. A Bomb lying on the other one closes the way for Cats.
+_Avoid_: Teleport, warp, skylight (that is only its look)
+
 ### Bombs
 
 **Bomb**:

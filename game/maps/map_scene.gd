@@ -74,6 +74,8 @@ func to_map_data() -> MapData:
 				map.tiles.append(MapData.Tile.FLOOR)
 				if item == MapPalette.Item.SPAWN_MARKER:
 					map.spawn_points.append(Vector2i(x, y))
+				elif item in MapPalette.PORTALS:
+					map.portals[Vector2i(x, y)] = MapPalette.PORTALS[item]
 	return map
 
 

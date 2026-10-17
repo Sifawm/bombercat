@@ -7,6 +7,7 @@ extends RefCounted
 enum Item {
 	WALL_BRICK, WALL_BRICK_LOW, WALL_PILLAR, CRATE, SPAWN_MARKER,
 	WALL_ROOM, WALL_ROOM_LOW, SOFA_LEFT, SOFA_MIDDLE, SOFA_RIGHT, BOOKSHELF, CAT_TREE, TABLE_CORNER,
+	PORTAL_BLUE, PORTAL_ORANGE,
 }
 
 const MODELS: Dictionary[Item, String] = {
@@ -23,12 +24,16 @@ const MODELS: Dictionary[Item, String] = {
 	Item.BOOKSHELF: "bookshelf",
 	Item.CAT_TREE: "cat_tree",
 	Item.TABLE_CORNER: "table_corner",
+	Item.PORTAL_BLUE: "portal_blue",
+	Item.PORTAL_ORANGE: "portal_orange",
 }
 const WALLS: Array[Item] = [
 	Item.WALL_BRICK, Item.WALL_BRICK_LOW, Item.WALL_PILLAR,
 	Item.WALL_ROOM, Item.WALL_ROOM_LOW, Item.SOFA_LEFT, Item.SOFA_MIDDLE, Item.SOFA_RIGHT, Item.BOOKSHELF,
 	Item.CAT_TREE, Item.TABLE_CORNER,
 ]
+## The colour each Portal item gives its Tile; a colour links the two Portals that have it.
+const PORTALS: Dictionary[Item, int] = {Item.PORTAL_BLUE: 1, Item.PORTAL_ORANGE: 2}
 
 static var _library: MeshLibrary
 

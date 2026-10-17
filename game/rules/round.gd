@@ -5,7 +5,7 @@ extends RefCounted
 ## are there to be read. The same commands on the same steps always give the same Round.
 
 signal bomb_placed(bomb: Bomb)
-## A pushed Bomb slid from the Tile `from` onto `bomb.tile`.
+## A pushed Bomb slid from the Tile `from` onto `bomb.tile`, or went through the Portal `from`.
 signal bomb_moved(bomb: Bomb, from: Vector2i)
 signal bomb_detonated(bomb: Bomb, tiles: Array[Vector2i])
 signal crate_destroyed(tile: Vector2i)
@@ -190,11 +190,7 @@ func _slide(bomb: Bomb, delta: float) -> void:
 	bomb.slide_progress += config.bomb_slide_speed * delta
 	while bomb.slide != Vector2i.ZERO:
 		var next := bomb.tile + bomb.slide
-		# A Cat is in the way if any part of it is on the Tile, not just its centre.
-		var cat_in_the_way := cats.any(func(cat: CatState) -> bool:
-			var gap := (cat.position - Vector2(next)).abs()
-			return cat.alive and maxf(gap.x, gap.y) < 1.0 - Movement.EPSILON)
-		if not board.is_walkable(next) or cat_in_the_way:
+		if not board.is_walkable(next) or _cat_on(next):
 			bomb.slide = Vector2i.ZERO
 			bomb.slide_progress = 0.0
 		elif bomb.slide_progress >= 1.0:
@@ -204,8 +200,33 @@ func _slide(bomb: Bomb, delta: float) -> void:
 			bomb.tile = next
 			bomb.slide_progress -= 1.0
 			bomb_moved.emit(bomb, from)
+			_go_through_portal(bomb)
 		else:
 			break
+
+
+## A pushed Bomb that has reached a Portal comes out of the other one and slides on, or stops
+## on this one when the other holds a Bomb or any part of a Cat.
+func _go_through_portal(bomb: Bomb) -> void:
+	var exit := board.portal_partner(bomb.tile)
+	if exit == MapData.NO_TILE:
+		return
+	if board.bombs.has(exit) or _cat_on(exit):
+		bomb.slide = Vector2i.ZERO
+		bomb.slide_progress = 0.0
+		return
+	var portal := bomb.tile
+	board.bombs.erase(portal)
+	board.bombs[exit] = bomb
+	bomb.tile = exit
+	bomb_moved.emit(bomb, portal)
+
+
+## Whether any part of a living Cat is on `tile`, not just its centre.
+func _cat_on(tile: Vector2i) -> bool:
+	return cats.any(func(cat: CatState) -> bool:
+		var gap := (cat.position - Vector2(tile)).abs()
+		return cat.alive and maxf(gap.x, gap.y) < 1.0 - Movement.EPSILON)
 
 
 func _place_bomb(player: int) -> void:

@@ -58,6 +58,14 @@ test('a Map must be enclosed by Walls', () => {
   expect(problems(['#####', '#S.S.', '#.#.#', '#####'])).toEqual([expect.stringMatching(/Wall.*\(4, 1\)/)]);
 });
 
+test('each Portal colour comes in a pair', () => {
+  expect(problems(['#######', '#S1.2S#', '#.#1#.#', '#S.2.S#', '#######'])).toEqual([]);
+  expect(problems(['#######', '#S1.1S#', '#.#1#.#', '#S.2.S#', '#######'])).toEqual([
+    expect.stringContaining('3 Portals of colour 1'),
+    expect.stringContaining('1 Portals of colour 2'),
+  ]);
+});
+
 test('the Powerup Pool may only name known Powerups', () => {
   expect(problems(GOOD, { yarn_ball: 1, laser_pointer: 1 })).toEqual([expect.stringContaining('laser_pointer')]);
 });

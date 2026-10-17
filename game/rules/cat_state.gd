@@ -21,6 +21,9 @@ var nine_lives := false
 var invulnerable_left := 0.0
 ## The active Curse, if any.
 var curse: Curse
+## The Portal this Cat came out of and has not left since, or MapData.NO_TILE. Reaching its
+## centre again does not send the Cat back.
+var portal_arrival := MapData.NO_TILE
 
 
 ## The Tile under the Cat's centre.

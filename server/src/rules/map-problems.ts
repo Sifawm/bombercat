@@ -38,6 +38,12 @@ export function mapProblems(map: MapData): string[] {
     found.push(`The Powerup Pool holds ${powerups} Powerups but the Map has only ${crates} Crates.`);
   }
 
+  const portals = new Map<number, number>();
+  for (const colour of map.portals.values()) portals.set(colour, (portals.get(colour) ?? 0) + 1);
+  for (const [colour, count] of portals) {
+    if (count !== 2) found.push(`There are ${count} Portals of colour ${colour}; a colour needs exactly 2.`);
+  }
+
   const openBorder: Vec[] = [];
   for (let y = 0; y < map.size.y; y++) {
     for (let x = 0; x < map.size.x; x++) {

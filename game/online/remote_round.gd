@@ -63,6 +63,7 @@ func _init(map: MapData, game_config: GameConfig, snapshot: Dictionary) -> void:
 		if known.curse != null:
 			cat.curse = _curse(known.curse.id)
 			cat.curse.time_left = known.curse.timeLeft
+		cat.portal_arrival = _arrival(known)
 	time_left = snapshot.timeLeft
 	finished = snapshot.finished
 
@@ -109,6 +110,7 @@ func apply_moved(moved: Dictionary) -> void:
 		var known: Dictionary = moved.cats[player]
 		cats[player].position = Vector2(known.x, known.y)
 		cats[player].facing = Vector2i(int(known.fx), int(known.fy))
+		cats[player].portal_arrival = _arrival(known)
 	if predicted != -1:
 		var answered := int(moved.cats[predicted].seq)
 		if answered > _inputs_sent:
@@ -218,6 +220,11 @@ func _add_bomb(tile: Vector2i, owner: int, bomb_range: int) -> Bomb:
 
 func _curse(curse_id: String) -> Curse:
 	return (load(CURSES % curse_id) as GDScript).new()
+
+
+## The Portal a Cat the server writes came out of and has not left, or MapData.NO_TILE.
+static func _arrival(known: Dictionary) -> Vector2i:
+	return MapData.NO_TILE if known.get("arrival") == null else _tile(known.arrival)
 
 
 ## The server writes a Tile as `{ x, y }`, in numbers that arrive as floats.

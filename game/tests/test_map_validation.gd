@@ -54,3 +54,11 @@ func test_the_powerup_pool_may_only_name_known_powerups() -> void:
 	var found := problems(GOOD, {&"yarn_ball": 1, &"laser_pointer": 1})
 	check_eq(found.size(), 1, "one problem")
 	check(found[0].contains("laser_pointer"), found[0])
+
+
+func test_each_portal_colour_comes_in_a_pair() -> void:
+	check_eq(problems(["#######", "#S1.2S#", "#.#1#.#", "#S.2.S#", "#######"]), PackedStringArray(), "two pairs")
+	var found := problems(["#######", "#S1.1S#", "#.#1#.#", "#S.2.S#", "#######"])
+	check_eq(found.size(), 2, "three of one colour, one of the other")
+	check(found[0].contains("3 Portals of colour 1"), found[0])
+	check(found[1].contains("1 Portals of colour 2"), found[1])

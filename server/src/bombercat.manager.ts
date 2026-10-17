@@ -147,6 +147,7 @@ export class BombercatManager
         fx: cat.facing.x,
         fy: cat.facing.y,
         seq: memory.applied[player],
+        arrival: cat.portalArrival && { ...cat.portalArrival },
       })),
       sliding: round.bombs
         .filter((bomb) => bomb.slide.x !== 0 || bomb.slide.y !== 0)
@@ -333,6 +334,7 @@ function snapshotOf(round: Round): RoundSnapshot {
       nineLives: cat.nineLives,
       invulnerableLeft: cat.invulnerableLeft,
       curse: cat.curse && { ...cat.curse },
+      arrival: cat.portalArrival && { ...cat.portalArrival },
     })),
     finished: round.finished,
   };

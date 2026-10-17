@@ -402,6 +402,17 @@ def rug():
     return p
 
 
+# ---------------------------------------------------------------- rooftops: a Portal is a skylight lit in its colour
+def skylight(light):
+    p = Prop()
+    wood, bar = V(0.42, 0.27, 0.16), V(0.3, 0.19, 0.11)
+    p.box((0.9, 0.9, 0.05), (0, 0, 0.025), wood, bevel=0.015)
+    p.box((0.72, 0.72, 0.02), (0, 0, 0.045), light, bevel=0, mat=GLOW)
+    p.box((0.05, 0.72, 0.03), (0, 0, 0.05), bar, bevel=0)
+    p.box((0.72, 0.05, 0.03), (0, 0, 0.05), bar, bevel=0)
+    return p
+
+
 PROPS = [("bomb", bomb()), ("floor_a", floor(V(0.36, 0.62, 0.22))), ("floor_b", floor(V(0.27, 0.52, 0.17))),
          ("wall_pillar", wall_pillar()), ("crate", crate()), ("wall_brick", wall_brick()),
          ("wall_brick_low", wall_brick(1)), ("spawn_marker", spawn_marker()),
@@ -411,6 +422,7 @@ PROPS = [("bomb", bomb()), ("floor_a", floor(V(0.36, 0.62, 0.22))), ("floor_b", 
          ("floor_parquet_b", parquet(V(0.42, 0.26, 0.16), V(0.39, 0.24, 0.15))),
          ("wall_room", wall_room()), ("wall_room_low", wall_room(0.32)),
          ("sofa_left", sofa(-1)), ("sofa_middle", sofa(0)), ("sofa_right", sofa(1)),
-         ("bookshelf", bookshelf()), ("cat_tree", cat_tree()), ("table_corner", table_corner()), ("rug", rug())]
+         ("bookshelf", bookshelf()), ("cat_tree", cat_tree()), ("table_corner", table_corner()), ("rug", rug()),
+         ("portal_blue", skylight(V(0.25, 0.65, 1.0))), ("portal_orange", skylight(V(1.0, 0.55, 0.12)))]
 for i, (name, prop) in enumerate(PROPS):
     prop.finish(name, i * 1.5)

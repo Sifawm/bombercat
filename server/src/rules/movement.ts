@@ -1,5 +1,5 @@
-import type { Board, Cat } from './board';
-import type { Vec } from './map';
+import { type Board, type Cat, tileOf } from './board';
+import { sameTile, type Vec } from './map';
 
 export const EPSILON = 0.0001;
 
@@ -10,7 +10,8 @@ const moveToward = (from: number, to: number, delta: number) =>
  * Moves a Cat along the grid. A Cat always has at least one coordinate on a whole number (it walks
  * along rows and columns), may move freely within Tiles it already overlaps, and may only start
  * overlapping a new Tile if that Tile is walkable. That alone gives the Bomb rule: its owner
- * overlaps the Bomb's Tile until fully off it, and then cannot re-enter.
+ * overlaps the Bomb's Tile until fully off it, and then cannot re-enter. A Cat whose centre reaches the
+ * centre of a Portal goes on from the other one.
  *
  * Returns the Tile that stopped the Cat walking straight ahead, or null. This is the twin of
  * `movement.gd`, which a client predicts with: the two must move a Cat in the same way (ADR 0004).
@@ -19,6 +20,7 @@ const moveToward = (from: number, to: number, delta: number) =>
  * corner assist or halfway between two Tiles.
  */
 export function move(cat: Cat, board: Board, direction: Vec, distance: number, cornerAssist: number): Vec | null {
+  if (cat.portalArrival && !sameTile(tileOf(cat.position), cat.portalArrival)) cat.portalArrival = null;
   if (direction.x === 0 && direction.y === 0) return null;
   cat.facing = direction;
   const along = direction.x !== 0 ? 'x' : 'y';
@@ -47,6 +49,7 @@ export function move(cat: Cat, board: Board, direction: Vec, distance: number, c
       return null;
     }
     position[across] = target;
+    arrive(cat, board, position);
   }
 
   while (distance > EPSILON) {
@@ -62,7 +65,18 @@ export function move(cat: Cat, board: Board, direction: Vec, distance: number, c
     const travelled = Math.min(distance, Math.abs(next - position[along]));
     position[along] = Math.fround(moveToward(position[along], next, travelled));
     distance -= travelled;
+    if (position[along] === next) arrive(cat, board, position);
   }
   cat.position = position;
   return null;
+}
+
+/** A Cat whose centre has just reached a Tile centre, `position`, goes on from the other Portal if that Tile is one that may send it there. */
+function arrive(cat: Cat, board: Board, position: Vec): void {
+  const tile = tileOf(position);
+  const exit = board.portalExit(tile);
+  if (!exit || (cat.portalArrival && sameTile(tile, cat.portalArrival))) return;
+  cat.portalArrival = exit;
+  position.x = exit.x;
+  position.y = exit.y;
 }

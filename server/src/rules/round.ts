@@ -83,6 +83,7 @@ export class Round {
         nineLives: false,
         invulnerableLeft: 0,
         curse: null,
+        portalArrival: null,
       });
       this.moves.push(ZERO);
       this.bombRequests.push(false);
@@ -222,14 +223,7 @@ export class Round {
     bomb.slideProgress += this.config.bombSlideSpeed * delta;
     while (bomb.slide.x !== 0 || bomb.slide.y !== 0) {
       const next = { x: bomb.tile.x + bomb.slide.x, y: bomb.tile.y + bomb.slide.y };
-      // A Cat is in the way if any part of it is on the Tile, not just its centre.
-      const catInTheWay = this.cats.some(
-        // The gap is a Vector2 in `round.gd`: 32-bit, like the positions (see `move`).
-        (cat) =>
-          cat.alive &&
-          Math.fround(Math.max(Math.abs(cat.position.x - next.x), Math.abs(cat.position.y - next.y))) < 1 - EPSILON,
-      );
-      if (!this.board.isWalkable(next) || catInTheWay) {
+      if (!this.board.isWalkable(next) || this.catOn(next)) {
         bomb.slide = ZERO;
         bomb.slideProgress = 0;
       } else if (bomb.slideProgress >= 1) {
@@ -239,10 +233,40 @@ export class Round {
         bomb.tile = next;
         bomb.slideProgress -= 1;
         this.happened.push({ type: 'bombMoved', from, to: next });
+        this.goThroughPortal(bomb);
       } else {
         break;
       }
     }
+  }
+
+  /**
+   * A pushed Bomb that has reached a Portal comes out of the other one and slides on, or stops on
+   * this one when the other holds a Bomb or any part of a Cat.
+   */
+  private goThroughPortal(bomb: Bomb): void {
+    const exit = this.board.portalPartner(bomb.tile);
+    if (!exit) return;
+    if (this.board.bombs.has(tileKey(exit)) || this.catOn(exit)) {
+      bomb.slide = ZERO;
+      bomb.slideProgress = 0;
+      return;
+    }
+    const portal = bomb.tile;
+    this.board.bombs.delete(tileKey(portal));
+    this.board.bombs.set(tileKey(exit), bomb);
+    bomb.tile = exit;
+    this.happened.push({ type: 'bombMoved', from: portal, to: exit });
+  }
+
+  /** Whether any part of a living Cat is on `tile`, not just its centre. */
+  private catOn(tile: Vec): boolean {
+    return this.cats.some(
+      // The gap is a Vector2 in `round.gd`: 32-bit, like the positions (see `move`).
+      (cat) =>
+        cat.alive &&
+        Math.fround(Math.max(Math.abs(cat.position.x - tile.x), Math.abs(cat.position.y - tile.y))) < 1 - EPSILON,
+    );
   }
 
   private placeBombOf(player: number): void {

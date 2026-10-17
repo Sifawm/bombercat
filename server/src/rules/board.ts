@@ -1,4 +1,4 @@
-import { type MapData, type Tile, tileAt, tileKey, type Vec } from './map';
+import { type MapData, portalPartner, type Tile, tileAt, tileKey, type Vec } from './map';
 
 export interface Bomb {
   tile: Vec;
@@ -40,6 +40,8 @@ export interface Cat {
   invulnerableLeft: number;
   /** The active Curse, if any. */
   curse: Curse | null;
+  /** The Portal this Cat came out of and has not left since, or null. Reaching its centre again does not send the Cat back. */
+  portalArrival: Vec | null;
 }
 
 /** The Tile under a position's centre. Positions are never negative, so halves round away from zero. */
@@ -56,10 +58,12 @@ export class Board {
   /** Ids of the Powerups still inside their Crates. */
   readonly hiddenPowerups = new Map<string, string>();
   readonly tiles: Tile[];
+  readonly portals: Map<string, number>;
 
   constructor(map: MapData) {
     this.size = map.size;
     this.tiles = [...map.tiles];
+    this.portals = map.portals;
   }
 
   tileAt(tile: Vec): Tile {
@@ -69,6 +73,20 @@ export class Board {
   /** Whether a Cat that does not already overlap this Tile may enter it. */
   isWalkable(tile: Vec): boolean {
     return this.tileAt(tile) === 'floor' && !this.bombs.has(tileKey(tile));
+  }
+
+  /**
+   * Where a Cat that reaches the centre of `tile` comes out: the other Portal of its colour, unless
+   * a Bomb lies on it. Null for a Tile that is no Portal.
+   */
+  portalExit(tile: Vec): Vec | null {
+    const exit = portalPartner(this, tile);
+    return exit && !this.bombs.has(tileKey(exit)) ? exit : null;
+  }
+
+  /** The other Portal of the colour of `tile`, or null, whatever lies on it. */
+  portalPartner(tile: Vec): Vec | null {
+    return portalPartner(this, tile);
   }
 
   destroyCrate(tile: Vec): void {

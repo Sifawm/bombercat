@@ -27,6 +27,13 @@ static func problems(map: MapData) -> PackedStringArray:
 	if powerups > crates:
 		found.append("The Powerup Pool holds %d Powerups but the Map has only %d Crates." % [powerups, crates])
 
+	var portals: Dictionary[int, int] = {}
+	for tile in map.portals:
+		portals[map.portals[tile]] = portals.get(map.portals[tile], 0) + 1
+	for colour in portals:
+		if portals[colour] != 2:
+			found.append("There are %d Portals of colour %d; a colour needs exactly 2." % [portals[colour], colour])
+
 	var open_border: Array[Vector2i] = []
 	for y in map.size.y:
 		for x in map.size.x:

@@ -27,3 +27,6 @@ func test_movement_walks_every_shared_case_to_where_the_file_says() -> void:
 		var expected_blocked := Movement.NOT_BLOCKED if expected.blocked == null \
 				else Vector2i(expected.blocked[0], expected.blocked[1])
 		check_eq(blocked, expected_blocked, what + ": blocked")
+		var expected_arrival := MapData.NO_TILE if expected.arrival == null \
+				else Vector2i(expected.arrival[0], expected.arrival[1])
+		check_eq(cat.portal_arrival, expected_arrival, what + ": the Portal it came out of")

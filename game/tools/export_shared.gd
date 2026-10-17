@@ -40,7 +40,13 @@ func _described(map: MapData) -> Dictionary:
 	for y in map.size.y:
 		var row := ""
 		for x in map.size.x:
-			row += "S" if map.spawn_points.has(Vector2i(x, y)) else SYMBOLS[map.tile_at(Vector2i(x, y))]
+			var tile := Vector2i(x, y)
+			if map.spawn_points.has(tile):
+				row += "S"
+			elif map.portals.has(tile):
+				row += str(map.portals[tile])
+			else:
+				row += SYMBOLS[map.tile_at(tile)]
 		rows.append(row)
 	return {"rows": rows, "powerupPool": map.powerup_pool}
 

@@ -12,6 +12,8 @@ export interface MapData {
   spawnPoints: Vec[];
   /** How many of each Powerup (by id) the Map hides in its Crates every Round. */
   powerupPool: Record<string, number>;
+  /** The colour (1, 2...) of each Portal, by `tileKey`. A Portal is a Floor Tile linked to the other Portal of its colour. */
+  portals: Map<string, number>;
 }
 
 /** What tells one Tile from another where a Tile is a key. */
@@ -27,16 +29,29 @@ export const sameTile = (a: Vec, b: Vec) => a.x === b.x && a.y === b.y;
 
 const SYMBOLS: Record<string, Tile> = { '#': 'wall', x: 'crate' };
 
-/** Builds a Map from text rows: "#" Wall, "x" Crate, "S" Spawn Point, anything else Floor. */
+/**
+ * Builds a Map from text rows: "#" Wall, "x" Crate, "S" Spawn Point, "1" to "9" a Portal of that
+ * colour, anything else Floor.
+ */
 export function mapFromRows(rows: readonly string[], powerupPool: Record<string, number> = {}): MapData {
-  const map: MapData = { size: { x: rows[0].length, y: rows.length }, tiles: [], spawnPoints: [], powerupPool };
+  const size = { x: rows[0].length, y: rows.length };
+  const map: MapData = { size, tiles: [], spawnPoints: [], powerupPool, portals: new Map() };
   for (let y = 0; y < map.size.y; y++) {
     for (let x = 0; x < map.size.x; x++) {
       map.tiles.push(SYMBOLS[rows[y][x]] ?? 'floor');
       if (rows[y][x] === 'S') map.spawnPoints.push({ x, y });
+      if (rows[y][x] >= '1' && rows[y][x] <= '9') map.portals.set(tileKey({ x, y }), Number(rows[y][x]));
     }
   }
   return map;
+}
+
+/** The other Portal of the colour of `tile`, or null when `tile` is no Portal or its colour is not a pair. */
+export function portalPartner(map: Pick<MapData, 'portals'>, tile: Vec): Vec | null {
+  const colour = map.portals.get(tileKey(tile));
+  if (colour === undefined) return null;
+  const linked = [...map.portals].filter(([key, other]) => other === colour && key !== tileKey(tile));
+  return linked.length === 1 ? tileOfKey(linked[0][0]) : null;
 }
 
 /** Anything outside the Map counts as Wall. */

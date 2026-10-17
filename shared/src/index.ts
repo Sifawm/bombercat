@@ -90,6 +90,8 @@ export interface CatSnapshot {
   nineLives: boolean;
   invulnerableLeft: number;
   curse: { id: string; timeLeft: number } | null;
+  /** The Portal it came out of and has not left yet, which does not send it back. */
+  arrival: Vec | null;
 }
 
 export interface BombSnapshot {
@@ -107,7 +109,7 @@ export interface BombSnapshot {
 /** Everything about a Round that every User may know: not what its Crates still hide. */
 export interface RoundSnapshot {
   timeLeft: number;
-  /** The Map as it is now, in the text rows a Map is exported as: "#" Wall, "x" Crate, "." Floor. */
+  /** The Map's Tiles as they are now: "#" Wall, "x" Crate, "." Floor (Portals included). */
   rows: string[];
   bombs: BombSnapshot[];
   powerups: { x: number; y: number; id: string }[];
@@ -149,7 +151,8 @@ export const isInput = (input: unknown): input is Input => {
 /** Where everything that moves is after a Tick. `seq` is the last Input of that Player that was applied. */
 export interface Moved {
   timeLeft: number;
-  cats: { x: number; y: number; fx: number; fy: number; seq: number }[];
+  /** `arrival` as in `CatSnapshot`: a client walks its own Cat again from there (ADR 0004). */
+  cats: { x: number; y: number; fx: number; fy: number; seq: number; arrival: Vec | null }[];
   /** The Bombs that are sliding, by the Tile each is on. */
   sliding: { x: number; y: number; sx: number; sy: number; progress: number }[];
 }
