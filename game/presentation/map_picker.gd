@@ -17,6 +17,8 @@ var _map_image := TextureRect.new()
 var _map_name := Ui.label("", 64, Ui.INK, Ui.LILITA)
 var _map_meta := Ui.label("", 32, Ui.INK, Ui.FREDOKA_MEDIUM)
 var _thumbs := HBoxContainer.new()
+## The row of thumbnails, as wide as the card and kept under it.
+var _under_card := CenterContainer.new()
 
 
 func _init() -> void:
@@ -57,13 +59,12 @@ func _init() -> void:
 	_next.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	carousel.add_child(_next)
 	add_child(carousel)
-	var thumbs := CenterContainer.new()
-	thumbs.custom_minimum_size.x = 768
+	_under_card.custom_minimum_size.x = 768
 	_thumbs.add_theme_constant_override("separation", 24)
 	for map in maps:
 		_thumbs.add_child(_thumb(map))
-	thumbs.add_child(_thumbs)
-	add_child(thumbs)
+	_under_card.add_child(_thumbs)
+	add_child(_under_card)
 
 
 ## Shows `map` as the chosen one; only with `can_change` may the arrows and thumbnails ask for another.
@@ -77,6 +78,8 @@ func show_map(map: String, can_change: bool) -> void:
 	for arrow: Button in [_previous, _next]:
 		arrow.visible = can_change
 		arrow.disabled = maps.size() < 2
+	# Without the arrows the card stands at the left edge, and so do the thumbnails under it.
+	_under_card.size_flags_horizontal = Control.SIZE_SHRINK_CENTER if can_change else Control.SIZE_SHRINK_BEGIN
 	for at in maps.size():
 		var thumb := _thumbs.get_child(at) as Button
 		var is_chosen := maps[at] == map
