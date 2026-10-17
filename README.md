@@ -91,8 +91,8 @@ To make or edit one, open it in the Godot editor and select its root node:
 - **Paint** Walls, Crates and Spawn Points from the GridMap palette, on floor 0. Every Wall model is
   the same Wall to the rules (`wall_brick`, `wall_room`, `sofa_left`, `bookshelf`...); rotate a piece
   with the GridMap's rotation keys. Empty Tiles inside the painted area are Floor, laid automatically.
-- **Look**: the root node's `floor_models` (the two Floor models of the checkerboard) and
-  `background` (what is seen around the Map). Decoration that is not a Tile, such as the rug of
+- **Look**: the root node's `floor_models` (the two Floor models of the checkerboard),
+  `background` (what is seen around the Map) and `light` (the colour of its sun, or moon). Decoration that is not a Tile, such as the rug of
   `living_room`, is a child node of the root.
 - **Powerup Pool**: the root node's `powerup_pool` property in the inspector.
 - **Validation**: problems appear as the yellow warning icon next to the root node.

@@ -402,14 +402,78 @@ def rug():
     return p
 
 
-# ---------------------------------------------------------------- rooftops: a Portal is a skylight lit in its colour
+# ---------------------------------------------------------------- rooftops: a Portal is a skylight; the game lights it in its colour
 def skylight(light):
     p = Prop()
     wood, bar = V(0.42, 0.27, 0.16), V(0.3, 0.19, 0.11)
     p.box((0.9, 0.9, 0.05), (0, 0, 0.025), wood, bevel=0.015)
-    p.box((0.72, 0.72, 0.02), (0, 0, 0.045), light, bevel=0, mat=GLOW)
+    p.box((0.72, 0.72, 0.02), (0, 0, 0.045), light, bevel=0, mat=GLOSS)
     p.box((0.05, 0.72, 0.03), (0, 0, 0.05), bar, bevel=0)
     p.box((0.72, 0.05, 0.03), (0, 0, 0.05), bar, bevel=0)
+    return p
+
+
+def roof(slate, alt):
+    """Slate shingles in three staggered rows."""
+    p = Prop()
+    p.box((1, 1, 0.1), (0, 0, -0.07), V(0.16, 0.17, 0.22), bevel=0)
+    for row in range(3):
+        y = -0.333 + row * 0.333
+        shift = 0.125 if row % 2 else 0
+        for i in range(-1, 5):
+            left, right = max(-0.5, -0.5 + shift + (i - 0.0) * 0.25), min(0.5, -0.5 + shift + (i + 1) * 0.25)
+            if right - left > 0.02:
+                p.box((right - left - 0.012, 0.32, 0.025), ((left + right) / 2, y, -0.0125), slate if (i + row) % 2 else alt, bevel=0.006)
+    return p
+
+
+def wall_ridge(h=0.62):
+    """Stone parapet around the roofs; the low variant does not hide the Tiles behind it."""
+    p = Prop()
+    stone, band, cap = V(0.40, 0.42, 0.53), V(0.33, 0.35, 0.45), V(0.62, 0.64, 0.74)
+    p.box((0.96, 0.96, h - 0.07), (0, 0, (h - 0.07) / 2), stone, bevel=0)
+    for z in [0.16 + 0.18 * i for i in range(int((h - 0.2) / 0.18) + 1)]:
+        if z < h - 0.1:
+            p.box((0.97, 0.97, 0.025), (0, 0, z), band, bevel=0)
+    p.box((1.0, 1.0, 0.07), (0, 0, h - 0.035), cap, bevel=0.02)
+    return p
+
+
+def chimney(antenna=False):
+    p = Prop()
+    brick, alt, cap, soot = V(0.62, 0.27, 0.2), V(0.55, 0.22, 0.17), V(0.6, 0.6, 0.66), V(0.06, 0.05, 0.06)
+    for i in range(5):
+        p.box((0.8 if i % 2 else 0.78, 0.8 if i % 2 else 0.78, 0.12), (0, 0, 0.06 + i * 0.12), brick if i % 2 else alt, bevel=0.01)
+    p.box((0.9, 0.9, 0.08), (0, 0, 0.64), cap, bevel=0.02)
+    p.box((0.5, 0.5, 0.02), (0, 0, 0.68), soot, bevel=0)
+    if antenna:
+        metal = V(0.75, 0.77, 0.82)
+        p.tube([V(0.34, 0.34, 0.66), V(0.34, 0.34, 1.15)], 0.02, metal)
+        for z, w in ((1.0, 0.36), (1.1, 0.26)):
+            p.tube([V(0.34 - w / 2, 0.34, z), V(0.34 + w / 2, 0.34, z)], 0.012, metal)
+    return p
+
+
+def alley():
+    """The gap between two roofs: a dark drop behind railings. A Wall to the rules."""
+    p = Prop()
+    dark, iron, lamp = V(0.04, 0.05, 0.1), V(0.16, 0.16, 0.2), V(1.0, 0.8, 0.4)
+    p.box((1.0, 1.0, 0.01), (0, 0, 0.005), dark, bevel=0)
+    p.ball(V(0.1, 0.15, 0.012), (0.05, 0.05, 0.005), lamp, GLOW, seg=10)
+    for s in (-1, 1):
+        for y in (-0.4, 0, 0.4):
+            p.box((0.04, 0.04, 0.32), (s * 0.45, y, 0.16), iron, bevel=0)
+        p.box((0.04, 1.0, 0.04), (s * 0.45, 0, 0.32), iron, bevel=0.01)
+    return p
+
+
+def bridge_plank():
+    """Planks laid across the alley where the roofs meet; decoration over a Floor Tile."""
+    p = Prop()
+    wood, alt = V(0.55, 0.38, 0.22), V(0.48, 0.32, 0.18)
+    p.box((1.0, 1.0, 0.012), (0, 0, 0.006), V(0.04, 0.05, 0.1), bevel=0)
+    for i in range(4):
+        p.box((1.16, 0.2, 0.04), (0, -0.33 + i * 0.22, 0.03), wood if i % 2 else alt, bevel=0.01)
     return p
 
 
@@ -423,6 +487,10 @@ PROPS = [("bomb", bomb()), ("floor_a", floor(V(0.36, 0.62, 0.22))), ("floor_b", 
          ("wall_room", wall_room()), ("wall_room_low", wall_room(0.32)),
          ("sofa_left", sofa(-1)), ("sofa_middle", sofa(0)), ("sofa_right", sofa(1)),
          ("bookshelf", bookshelf()), ("cat_tree", cat_tree()), ("table_corner", table_corner()), ("rug", rug()),
-         ("portal_blue", skylight(V(0.25, 0.65, 1.0))), ("portal_orange", skylight(V(1.0, 0.55, 0.12)))]
+         ("portal_blue", skylight(V(0.25, 0.65, 1.0))), ("portal_orange", skylight(V(1.0, 0.55, 0.12))),
+         ("floor_roof_a", roof(V(0.36, 0.40, 0.52), V(0.33, 0.37, 0.48))),
+         ("floor_roof_b", roof(V(0.30, 0.33, 0.44), V(0.27, 0.30, 0.40))),
+         ("wall_ridge", wall_ridge()), ("wall_ridge_low", wall_ridge(0.32)),
+         ("chimney", chimney()), ("chimney_antenna", chimney(True)), ("alley", alley()), ("bridge_plank", bridge_plank())]
 for i, (name, prop) in enumerate(PROPS):
     prop.finish(name, i * 1.5)

@@ -34,6 +34,7 @@ SOUNDS = {
     "collect_cucumber": ("interface:Audio/error_006.ogg", -5),
     "paw_swipe": ("rpg:Audio/knifeSlice.ogg", -4),
     "nine_lives": ("impact:Audio/impactBell_heavy_000.ogg", -4),
+    "portal": ("sci-fi:Audio/forceField_000.ogg", -6),
     "meow": (OGA + "Meow.ogg", -3),
     "death": (OGA + "cat_mewfood.wav", -2),
     "victory": ("jingles:Audio/Steel jingles/jingles_STEEL07.ogg", -5),

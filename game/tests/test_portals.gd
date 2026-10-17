@@ -40,6 +40,13 @@ func test_a_cat_is_not_sent_back_until_it_has_left_the_portal_it_came_out_of() -
 	check_position(cat, Vector2(3, 1), "having left the Tile, it goes back through")
 
 
+func test_a_cat_walking_at_its_speed_goes_through() -> void:
+	var game_round := make_round(TWO_CORRIDORS)
+	game_round.set_move(0, RIGHT)
+	advance(game_round, 0.6)
+	check_eq(game_round.cats[0].tile().y, 3, "in the other corridor, whatever the steps add up to")
+
+
 func test_a_bomb_on_the_other_portal_lets_a_cat_walk_over_this_one() -> void:
 	var walk := walker(Vector2(2, 1))
 	var cat: CatState = walk[0]

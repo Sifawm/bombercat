@@ -65,7 +65,11 @@ export function move(cat: Cat, board: Board, direction: Vec, distance: number, c
     const travelled = Math.min(distance, Math.abs(next - position[along]));
     position[along] = Math.fround(moveToward(position[along], next, travelled));
     distance -= travelled;
-    if (position[along] === next) arrive(cat, board, position);
+    // Steps of a 32-bit length can end a hair short of the centre: that is reaching it.
+    if (Math.abs(position[along] - next) < EPSILON) {
+      position[along] = next;
+      arrive(cat, board, position);
+    }
   }
   cat.position = position;
   return null;

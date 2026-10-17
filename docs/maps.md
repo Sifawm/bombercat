@@ -30,7 +30,10 @@ sides), so all five Cats fit online.
 19 x 11, rooftops at night. Two roofs of 8 x 9 Tiles, left and right, split by an alley of Walls
 and joined only by a one-Tile bridge on the middle row, and by two pairs of Portals.
 
-- **Walls:** chimneys and antennas as pillars on a sparse checkerboard; roof-ridge border.
+- **Walls:** `chimney` and `chimney_antenna` as pillars on a sparse checkerboard, `wall_ridge` (a
+  stone parapet) for the border and `wall_ridge_low` for its south side, `alley` for the drop
+  between the roofs. Planks lie across the bridge as decoration. The Map is lit by a bluish moon
+  (`light`) over a night `background`.
 - **Layout:** each roof is the other turned 180 degrees. 4 Spawn Points in the corners, so two
   local Players start on different roofs.
 - **Portals** cross diagonally (blue: top left to bottom right; orange: bottom left to top right),

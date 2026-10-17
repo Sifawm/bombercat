@@ -51,8 +51,9 @@ func _described(map: MapData) -> Dictionary:
 	return {"rows": rows, "powerupPool": map.powerup_pool}
 
 
-## What is painted on each Tile and how it is turned, the Floor, and the decoration that is
-## not a Tile: the models by name, at Tile coordinates, turned in degrees about the vertical.
+## What is painted on each Tile and how it is turned, the Floor, the decoration that is not a
+## Tile (models by name, at Tile coordinates, turned in degrees about the vertical) and the
+## colours of the light and of what is around the Map.
 func _look(node: MapScene) -> Dictionary:
 	var origin := node.tile_to_local(Vector2.ZERO)
 	var cells := []
@@ -67,7 +68,9 @@ func _look(node: MapScene) -> Dictionary:
 			var at: Vector3 = (child as Node3D).position - origin
 			decor.append({"x": at.x, "y": at.z, "model": child.scene_file_path.get_file().get_basename(),
 				"turn": roundi(rad_to_deg((child as Node3D).rotation.y))})
-	return {"floor": node.floor_models, "cells": cells, "decor": decor}
+	var rgb := func(color: Color) -> Array: return [snappedf(color.r, 0.001), snappedf(color.g, 0.001), snappedf(color.b, 0.001)]
+	return {"floor": node.floor_models, "cells": cells, "decor": decor, "light": rgb.call(node.light),
+		"background": rgb.call(node.background)}
 
 
 func _write(path: String, data: Dictionary) -> void:

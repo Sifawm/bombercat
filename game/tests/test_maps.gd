@@ -36,3 +36,25 @@ func test_living_room_is_a_valid_17_by_13_map_for_six() -> void:
 	check_eq(map.powerup_pool, {&"yarn_ball": 8, &"tuna_can": 9, &"catnip": 5, &"paw_swipe": 4, &"nine_lives": 2, &"cucumber": 2}
 		as Dictionary[StringName, int], "Powerup Pool")
 	check_eq(MapValidator.problems(map), PackedStringArray(), "no validation problems")
+
+
+func test_rooftops_are_two_roofs_joined_by_a_bridge_and_two_pairs_of_portals() -> void:
+	var scene: PackedScene = load("res://maps/rooftops.tscn")
+	var node: MapScene = scene.instantiate()
+	var map := node.to_map_data()
+	node.free()
+	check_eq(map.size, Vector2i(19, 11), "size")
+	check_eq(map.spawn_points, [Vector2i(1, 1), Vector2i(17, 1), Vector2i(1, 9), Vector2i(17, 9)] as Array[Vector2i],
+		"corner Spawn Points")
+	for y in range(1, 10):
+		check_eq(map.tile_at(Vector2i(9, y)), MapData.Tile.FLOOR if y == 5 else MapData.Tile.WALL, "the alley at row %d" % y)
+	check_eq(map.portal_partner(Vector2i(1, 4)), Vector2i(17, 6), "blue, top left to bottom right")
+	check_eq(map.portal_partner(Vector2i(1, 6)), Vector2i(17, 4), "orange, bottom left to top right")
+	for y in map.size.y:
+		for x in map.size.x:
+			var turned := map.size - Vector2i.ONE - Vector2i(x, y)
+			check_eq(map.tile_at(Vector2i(x, y)), map.tile_at(turned), "turned 180 degrees at (%d, %d)" % [x, y])
+	check_eq(map.tiles.count(MapData.Tile.CRATE), 92, "Crates")
+	check_eq(map.powerup_pool, {&"yarn_ball": 5, &"tuna_can": 5, &"catnip": 3, &"paw_swipe": 4, &"nine_lives": 1, &"cucumber": 2}
+		as Dictionary[StringName, int], "Powerup Pool")
+	check_eq(MapValidator.problems(map), PackedStringArray(), "no validation problems")

@@ -66,7 +66,9 @@ static func move(cat: CatState, board: Board, direction: Vector2i, distance: flo
 		var travelled := minf(distance, absf(next - position[along]))
 		position[along] = move_toward(position[along], next, travelled)
 		distance -= travelled
-		if position[along] == next:
+		# Steps of a 32-bit length can end a hair short of the centre: that is reaching it.
+		if absf(position[along] - next) < EPSILON:
+			position[along] = next
 			position = _arrive(cat, board, position)
 	cat.position = position
 	return NOT_BLOCKED

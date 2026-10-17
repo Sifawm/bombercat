@@ -32,6 +32,13 @@ test('a Cat is not sent back until it has left the Portal it came out of', () =>
   expectPosition(cat, { x: 3, y: 1 }); // having left the Tile, it goes back through
 });
 
+test('a Cat walking at its speed goes through', () => {
+  const round = makeRound(TWO_CORRIDORS);
+  round.setMove(0, RIGHT);
+  round.advance(0.6);
+  expect(Math.round(round.cats[0].position.y)).toBe(3); // in the other corridor, whatever the steps add up to
+});
+
 test('a Bomb on the other Portal lets a Cat walk over this one', () => {
   const [cat, board] = walker({ x: 2, y: 1 });
   board.bombs.set(tileKey({ x: 4, y: 3 }), {} as Bomb);

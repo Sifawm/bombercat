@@ -64,13 +64,13 @@ def render(name):
     sc.render.resolution_y = round(WIDTH * (top - bottom) / (right - left))
 
     sun = bpy.data.objects.new("M_Sun", bpy.data.lights.new("M_Sun", "SUN"))
-    sun.data.energy, sun.data.angle = 4.5, math.radians(8)
+    sun.data.energy, sun.data.angle, sun.data.color = 4.5, math.radians(8), look["light"]
     sun.rotation_euler = (math.radians(50), 0, math.radians(-15))
     sc.collection.objects.link(sun)
     w = bpy.data.worlds.get("M_World") or bpy.data.worlds.new("M_World")
     w.use_nodes = True
     bg = next(n for n in w.node_tree.nodes if n.type == "BACKGROUND")
-    bg.inputs["Color"].default_value = (0.30, 0.50, 0.85, 1)
+    bg.inputs["Color"].default_value = (*look["background"], 1)  # seen only as ambient light: the picture is transparent
     bg.inputs["Strength"].default_value = 0.55
     sc.world = w
 

@@ -38,6 +38,8 @@ const FASTER_MUSIC := 1.18
 const FRAMED_POINTS := 8
 ## How far the camera may back away to frame the Map, when the HUD leaves it no room.
 const MAX_CAMERA_DISTANCE := 100.0
+## The light of each Portal colour.
+const PORTAL_COLORS: Dictionary[int, Color] = {1: Color(0.3, 0.72, 1.0), 2: Color(1.0, 0.6, 0.15)}
 const CONFETTI: Array[Color] = [Color(1, 0.3, 0.3), Color(1, 0.85, 0.2), Color(0.3, 0.8, 1), Color(0.5, 1, 0.4), Color(1, 0.5, 0.9)]
 
 @export var config: GameConfig
@@ -54,6 +56,10 @@ var _controllers: Array[PlayerController] = [LocalPlayerController.new(0), Local
 var _countdown_left := 0.0
 var _world: Node3D
 var _cat_views: Array[CatView] = []
+## Where each Cat was in the last frame drawn, to tell a walk from going through a Portal.
+var _cat_positions: Array[Vector2] = []
+## The colour of each Portal of the Map.
+var _portals: Dictionary[Vector2i, int] = {}
 ## Whether each Cat moved in the last rules step.
 var _cat_moving: Array[bool] = []
 var _bomb_views: Dictionary[Bomb, BombView] = {}
@@ -157,6 +163,12 @@ func _clear_go() -> void:
 func _process(delta: float) -> void:
 	for player in _cat_views.size():
 		var cat := _round.cats[player]
+		if cat.position.distance_to(_cat_positions[player]) > 1.0:
+			_show_portal_crossed(_round.board.portal_partner(cat.tile()), cat.tile())
+			_cat_views[player].scale = Vector3.ONE * 0.6
+			_cat_views[player].create_tween().tween_property(_cat_views[player], "scale", Vector3.ONE, 0.25) \
+					.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		_cat_positions[player] = cat.position
 		_cat_views[player].position = _to_world(cat.position)
 		_cat_views[player].show_state(cat, _cat_moving[player], cat.speed > config.cat_speed, _round.finished)
 		if cat.alive and _countdown_left <= 0.0 and _controllers[player].meows():
@@ -223,6 +235,7 @@ func _start_round() -> void:
 	_world = Node3D.new()
 	add_child(_world)
 	_cat_views.clear()
+	_cat_positions.clear()
 	_cat_moving.clear()
 	_bomb_views.clear()
 	_sliding_bombs.clear()
@@ -238,8 +251,11 @@ func _start_round() -> void:
 	_map_node = map_scene.instantiate()
 	_world.add_child(_map_node)
 	$WorldEnvironment.environment.background_color = _map_node.background
+	$WorldEnvironment.environment.ambient_light_color = _map_node.light
+	$Sun.light_color = _map_node.light
 	var map := _map_node.to_map_data()
 	_map_node.prepare_for_play()
+	_portals = map.portals
 	_frame_map(map.size)
 	_countdown_left = CatView.DROP_SECONDS + COUNTDOWN_SECONDS
 
@@ -260,12 +276,43 @@ func _start_round() -> void:
 		for x in map.size.x:
 			if _round.board.tile_at(Vector2i(x, y)) == MapData.Tile.CRATE:
 				_crate_nodes[Vector2i(x, y)] = _place(CRATE.instantiate(), Vector2(x, y))
+	for tile in _portals:
+		_light_portal(tile)
 	for player in cat_picks.size():
 		var view := CatView.new(Roster.cat_scene(cat_picks[player]))
 		_place(view, _round.cats[player].position)
 		view.drop()
 		_cat_views.append(view)
+		_cat_positions.append(_round.cats[player].position)
 		_cat_moving.append(false)
+
+
+## A Portal's skylight shines in its colour, whatever the light over the Map.
+func _light_portal(tile: Vector2i) -> void:
+	var color: Color = PORTAL_COLORS.get(_portals[tile], Color.WHITE)
+	var glass := MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(0.68, 0.68)
+	plane.material = Effects.flat_material(color)
+	glass.mesh = plane
+	glass.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_place(glass, Vector2(tile), 0.058)
+	var halo := Effects.glow(Color(color, 0.25), 0.45)
+	_place(halo, Vector2(tile), 0.1)
+	halo.scale.y = 0.35
+	var pulse := halo.create_tween().set_loops()
+	pulse.tween_property(halo, "scale:x", 1.15, 0.8).set_trans(Tween.TRANS_SINE)
+	pulse.parallel().tween_property(halo, "scale:z", 1.15, 0.8).set_trans(Tween.TRANS_SINE)
+	pulse.tween_property(halo, "scale:x", 1.0, 0.8).set_trans(Tween.TRANS_SINE)
+	pulse.parallel().tween_property(halo, "scale:z", 1.0, 0.8).set_trans(Tween.TRANS_SINE)
+
+
+## Both Portals flash in their colour, and it sounds, as something goes through.
+func _show_portal_crossed(entry: Vector2i, exit: Vector2i) -> void:
+	var color: Color = PORTAL_COLORS.get(_portals.get(exit, 0), Color.WHITE)
+	for tile: Vector2i in [entry, exit]:
+		_place(Effects.burst(color, 14, 3.5, 0.5, 0.12, Vector3.UP * 2.0), Vector2(tile), 0.2)
+	Audio.play(&"portal")
 
 
 ## Adds `node` to the Round's world at a position in Tile units, `height` above the Floor.
@@ -322,7 +369,9 @@ func _on_bomb_placed(bomb: Bomb) -> void:
 
 
 ## The rules report every Tile a pushed Bomb crosses; the swipe sounds on the first.
-func _on_bomb_moved(bomb: Bomb, _from: Vector2i) -> void:
+func _on_bomb_moved(bomb: Bomb, from: Vector2i) -> void:
+	if (bomb.tile - from).length_squared() > 1:
+		_show_portal_crossed(from, bomb.tile)
 	if not _sliding_bombs.has(bomb):
 		_sliding_bombs.append(bomb)
 		Audio.play(&"paw_swipe")

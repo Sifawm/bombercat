@@ -21,6 +21,7 @@ nothing else is changed.
 | `powerup.ogg` | Powerup collected (any without a `collect_<id>.ogg` of its own) | `confirmation_001`, [Interface Sounds](https://kenney.nl/assets/interface-sounds) | [Kenney](https://kenney.nl) | CC0 1.0 |
 | `collect_cucumber.ogg` | Cucumber collected | `error_006`, [Interface Sounds](https://kenney.nl/assets/interface-sounds) | [Kenney](https://kenney.nl) | CC0 1.0 |
 | `paw_swipe.ogg` | A Bomb is pushed with Paw Swipe | `knifeSlice`, [RPG Audio](https://kenney.nl/assets/rpg-audio) | [Kenney](https://kenney.nl) | CC0 1.0 |
+| `portal.ogg` | A Cat or a Bomb goes through a Portal | `forceField_000`, [Sci-fi Sounds](https://kenney.nl/assets/sci-fi-sounds) | [Kenney](https://kenney.nl) | CC0 1.0 |
 | `nine_lives.ogg` | Nine Lives absorbs an Explosion | `impactBell_heavy_000`, [Impact Sounds](https://kenney.nl/assets/impact-sounds) | [Kenney](https://kenney.nl) | CC0 1.0 |
 | `meow.ogg` | Meow button | [Meow](https://opengameart.org/content/meow) | IgnasD | CC0 1.0 |
 | `death.ogg` | A Cat is eliminated | `cat_mewfood.wav`, [Cat purr & meow](https://opengameart.org/content/cat-purr-meow) | Kerzoven | CC0 1.0 |

@@ -2,12 +2,13 @@ import type { GameDefinition } from '@porterkit/contracts';
 import config from './config.json' with { type: 'json' };
 import backyard from './maps/backyard.json' with { type: 'json' };
 import living_room from './maps/living_room.json' with { type: 'json' };
+import rooftops from './maps/rooftops.json' with { type: 'json' };
 
 /** The balance values, as the Godot project exports them (ADR 0003). */
 export const balance = config;
 
-/** Every Map by name, as the Godot project exports them: text rows and a Powerup Pool. */
-export const maps = { backyard, living_room };
+/** Every Map by name, as the Godot project exports them: text rows, a Powerup Pool and its look. */
+export const maps = { backyard, living_room, rooftops };
 
 /** How many Cats there are to choose from: the length of `Roster.CATS` in the Godot project. */
 export const CAT_COUNT = 5;

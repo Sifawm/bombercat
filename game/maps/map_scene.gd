@@ -13,6 +13,8 @@ const TEST_PLAY := "res://map_studio/test_play.gd"
 @export var floor_models: Array[String] = ["floor_a", "floor_b"]
 ## What is seen around the Map in a Round.
 @export var background := Color(0.3, 0.5, 0.85)
+## The colour of the light over the Map in a Round: the sun by day, the moon by night.
+@export var light := Color.WHITE
 
 var _painted_hash := 0
 ## The painted area as of the last `to_map_data` or floor refresh; Tile (0, 0) is its corner.

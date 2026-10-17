@@ -1,6 +1,6 @@
 import { balance, maps } from '@bombercat/shared';
 import { expect, test } from 'vitest';
-import { farthestSpawnPoints, mapFromRows, tileAt } from './map';
+import { farthestSpawnPoints, mapFromRows, portalPartner, tileAt } from './map';
 import { mapProblems } from './map-problems';
 import type { GameConfig } from './config';
 import { config } from './testing';
@@ -92,6 +92,16 @@ test('living_room, as the Godot project exports it, is a valid 17 by 13 Map for 
   expect(map.spawnPoints).toHaveLength(6);
   expect(map.tiles.filter((tile) => tile === 'crate')).toHaveLength(82);
   expect(map.tiles).toEqual([...map.tiles].reverse()); // point symmetry
+  expect(mapProblems(map)).toEqual([]);
+});
+
+test('rooftops, as the Godot project exports it, joins its two roofs by a bridge and two pairs of Portals', () => {
+  const map = mapFromRows(maps.rooftops.rows, maps.rooftops.powerupPool);
+  expect(map.size).toEqual({ x: 19, y: 11 });
+  expect(map.spawnPoints).toHaveLength(4);
+  expect(portalPartner(map, { x: 1, y: 4 })).toEqual({ x: 17, y: 6 });
+  expect(portalPartner(map, { x: 1, y: 6 })).toEqual({ x: 17, y: 4 });
+  expect(map.tiles).toEqual([...map.tiles].reverse()); // turned 180 degrees
   expect(mapProblems(map)).toEqual([]);
 });
 
