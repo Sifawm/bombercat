@@ -112,6 +112,14 @@ blender -b art/cats.blend -P art/export_glb.py   # writes game/assets/models/*.g
 godot --headless --path game --import            # re-imports them
 ```
 
+The picture of each Map that Configure Match and Map Select show is rendered from the Maps the
+Godot project exports (`game/run_tests.sh` exports them):
+
+```sh
+blender -b art/cats.blend -P art/render_map.py [-- rooftops]   # writes game/assets/maps/<map>.png
+godot --headless --path game --import
+```
+
 To change a model, edit `art/build_cat.py` or `art/build_props.py`, run it inside Blender with
 `cats.blend` open (see each script's docstring), save, then export as above.
 
