@@ -9,15 +9,16 @@
   "dependencies": {
     "@bombercat/shared": "workspace:*",
     "@fastify/static": "^10.1.6",
-    "@nestjs/common": "link:../../porter/packages/nestjs/node_modules/@nestjs/common",
-    "@nestjs/core": "link:../../porter/packages/nestjs/node_modules/@nestjs/core",
-    "@nestjs/platform-fastify": "link:../../porter/packages/nestjs/node_modules/@nestjs/platform-fastify",
-    "@nestjs/platform-ws": "link:../../porter/packages/nestjs/node_modules/@nestjs/platform-ws",
-    "@nestjs/websockets": "link:../../porter/packages/nestjs/node_modules/@nestjs/websockets",
-    "@porterkit/nestjs": "link:../../porter/packages/nestjs",
-    "reflect-metadata": "link:../../porter/packages/nestjs/node_modules/reflect-metadata"
+    "@nestjs/common": "^11.0.0",
+    "@nestjs/core": "^11.0.0",
+    "@nestjs/platform-fastify": "^11.0.0",
+    "@nestjs/platform-ws": "^11.0.0",
+    "@nestjs/websockets": "^11.0.0",
+    "@porterkit/nestjs": "^0.1.0",
+    "reflect-metadata": "^0.2.0",
+    "rxjs": "^7.8.0"
   },
   "devDependencies": {
-    "@porterkit/client": "link:../../porter/packages/client"
+    "@porterkit/client": "^0.1.0"
   }
 }

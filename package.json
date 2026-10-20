@@ -10,7 +10,7 @@
     "server": "pnpm build && node server/dist/main.js",
     "web": "pnpm --filter @bombercat/web start",
     "export:web": "mkdir -p web/public/godot && godot --headless --path game --export-release Web ../web/public/godot/index.html",
-    "addon": "cp ../porter/packages/godot/addons/porter/porter.gd game/addons/porter/porter.gd",
+    "addon": "cp web/node_modules/@porterkit/godot/addons/porter/porter.gd game/addons/porter/porter.gd",
     "build:web": "pnpm export:web && pnpm --filter @bombercat/web build",
     "start": "pnpm build && node server/dist/main.js"
   },

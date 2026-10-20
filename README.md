@@ -35,8 +35,7 @@ rules run on the server ([ADR 0003](docs/adr/0003-online-rules-run-on-the-server
 Room with a name and a Cat, the Admin starts the Match, and everyone in the Room plays it. Each
 client sends what its Player asks of its Cat and draws what the server says.
 
-Needs Node 24, pnpm and, until Porter is published, its repository built next to this one at
-`../porter`.
+Needs Node 24 and pnpm. Porter comes from npm (`@porterkit/*`).
 
 ```sh
 pnpm install

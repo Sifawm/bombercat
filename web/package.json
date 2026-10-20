@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@bombercat/shared": "workspace:*",
-    "@porterkit/client": "link:../../porter/packages/client",
-    "@porterkit/godot": "link:../../porter/packages/godot"
+    "@porterkit/client": "^0.1.0",
+    "@porterkit/godot": "^0.1.0"
   }
 }

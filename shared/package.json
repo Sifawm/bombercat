@@ -12,6 +12,6 @@
     }
   },
   "dependencies": {
-    "@porterkit/contracts": "link:../../porter/packages/contracts"
+    "@porterkit/contracts": "^0.1.0"
   }
 }
