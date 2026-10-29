@@ -8,6 +8,7 @@ signal match_finished(game_match: Match)
 signal quit_requested
 
 const CRATE: PackedScene = preload("res://assets/models/crate.glb")
+const EXPLOSION_MESH: Mesh = preload("res://presentation/explosion_mesh.tres")
 
 const POWERUP_SCALE := 1.2
 const CAMERA_PITCH := deg_to_rad(57.0)
@@ -278,6 +279,7 @@ func _start_round() -> void:
 				_crate_nodes[Vector2i(x, y)] = _place(CRATE.instantiate(), Vector2(x, y))
 	for tile in _portals:
 		_light_portal(tile)
+	_warm_up(map)
 	for player in cat_picks.size():
 		var view := CatView.new(Roster.cat_scene(cat_picks[player]))
 		_place(view, _round.cats[player].position)
@@ -285,6 +287,30 @@ func _start_round() -> void:
 		_cat_views.append(view)
 		_cat_positions.append(_round.cats[player].position)
 		_cat_moving.append(false)
+
+
+## The first Bomb, Explosion and burst of a Round would freeze the picture a moment while the
+## shaders they need are compiled, worst on the web. One of each is drawn from the start,
+## shrunk to nothing under the Floor, and an Explosion's flash lights the Map faintly for a
+## moment. They stay for the whole Round: a shader is let go with the last thing drawn with it.
+func _warm_up(map: MapData) -> void:
+	var stash := Node3D.new()
+	stash.scale = Vector3.ONE * 0.001
+	_place(stash, Vector2(map.size) / 2.0, -2.0)
+	stash.add_child(BombView.new())
+	var explosion := MeshInstance3D.new()
+	explosion.mesh = EXPLOSION_MESH
+	stash.add_child(explosion)
+	stash.add_child(Effects.cubes(Color(0.3, 0.3, 0.3, 0.45), 1, 1.0, 0.2))
+	stash.add_child(Effects.glow(Color.WHITE, 0.3))
+	for powerup in map.powerup_pool:
+		var scene: PackedScene = load("res://assets/models/%s.glb" % powerup)
+		stash.add_child(scene.instantiate())
+	var flash := OmniLight3D.new()
+	flash.light_energy = 0.001
+	flash.omni_range = maxf(map.size.x, map.size.y)
+	_place(flash, Vector2(map.size) / 2.0, 1.0)
+	flash.create_tween().tween_callback(flash.queue_free).set_delay(0.5)
 
 
 ## A Portal's skylight shines in its colour, whatever the light over the Map.
@@ -397,7 +423,7 @@ func _on_bomb_detonated(bomb: Bomb, tiles: Array[Vector2i]) -> void:
 	for tile in tiles:
 		var reach := (tile - bomb.tile).length() * EXPLOSION_SPREAD
 		var explosion := MeshInstance3D.new()
-		explosion.mesh = preload("res://presentation/explosion_mesh.tres")
+		explosion.mesh = EXPLOSION_MESH
 		explosion.scale = Vector3.ZERO
 		_place(explosion, Vector2(tile), 0.35)
 		var tween := explosion.create_tween()
