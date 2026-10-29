@@ -1,8 +1,9 @@
 # Laser Pointer
 
 On the title screen and wherever Cats are chosen, the mouse pointer becomes a laser dot and the
-Cats hunt it. This document is the spec of the first iteration and of the second, which replaced
-the first's hops and swats: where they differ, the last section stands.
+Cats hunt it. This document is the spec of the first iteration and of the two that followed,
+which replaced the first's hops, swats and bites near the Cat: where they differ, the last section
+stands.
 
 ## Problem Statement
 
@@ -176,3 +177,20 @@ them.
    (idle, watch, hop, stalk, pounce, pin, bite, miss): the hunting Cat calls it every frame and
    tells it when a one-shot clip (`pounce`, `pin`, `bite`) has ended, and it decides the catch or
    the miss. Its tests cover the hops, the stalk, the committed pounce, the catch and the miss.
+
+## Third Iteration: Swats Within Reach
+
+Built after the second. Seen on screen, a Cat biting at a dot that came near read as nibbling
+rather than hunting: a cat whose paw can reach the laser tries to grab it.
+
+1. **Swats.** From the moment the dot is within the Cat's reach (under 110 px from its centre, the
+   old bite distance, renamed the reach), it swats at it with its feet planted, in a new looping
+   clip, `swat_l` or `swat_r`: in 1 s the paw on the dot's side winds up beside the cheek and
+   slaps out and down at the dot three times, the body dipping a little on each slap, while the
+   other paw stays up. A little desperate, not frantic. Only the paw on the dot's side swats,
+   chosen as for the hops.
+2. **Swats in the screen's plane.** Seen from the front, a paw swung forward points at the camera
+   and is lost, and one raised above about 110° hides behind the big head, so the swats go
+   sideways and stay below the cheek.
+3. **The bite is kept only for a catch**: after a pounce that lands within reach of the dot, the
+   Cat pins it and bites it, as before.

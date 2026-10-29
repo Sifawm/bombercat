@@ -142,7 +142,7 @@ The white Cat with a chocolate mask (the "stray" model).
 _Avoid_: Callejero
 
 **Laser Pointer**:
-The mouse pointer on the screens that show the Cats (the title screen, Cat Select, the WaitingRoom): a red dot the Cats watch, hop at with a paw stretched out, stalk, pounce on and bite. It is decoration and chooses nothing (`docs/laser-pointer.md`).
+The mouse pointer on the screens that show the Cats (the title screen, Cat Select, the WaitingRoom): a red dot the Cats watch, hop at with a paw stretched out, swat at when it is within reach, stalk, pounce on and bite when they catch it. It is decoration and chooses nothing (`docs/laser-pointer.md`).
 _Avoid_: Cursor (for the dot)
 
 ### Online

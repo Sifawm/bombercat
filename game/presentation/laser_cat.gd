@@ -2,7 +2,7 @@ class_name LaserCat
 extends Control
 ## A Cat in the menus that hunts the Laser Pointer's dot (docs/laser-pointer.md): it watches the
 ## dot, hops at it with a paw stretched out when it is near, stalks it when it rests or is below
-## its feet, pounces when it moves again and bites at it when it is on it. It stays in its place;
+## its feet, pounces when it moves again, and swats at it when its paw can reach it. It stays in its place;
 ## its view reaches beyond it so its turns and leaps are not cut off.
 
 ## Room around the Cat, as a share of its size: on each side for its turns, and above it for its
@@ -17,7 +17,7 @@ const SNAP_RATE := 30.0
 ## How far back, in degrees, and for how long the ear flicks after a miss.
 const EAR_FLICK := 25.0
 const FLICK_TIME := 0.3
-const LOOPS: Array[StringName] = [&"idle", &"hop_l", &"hop_r", &"stalk"]
+const LOOPS: Array[StringName] = [&"idle", &"hop_l", &"hop_r", &"stalk", &"swat_l", &"swat_r"]
 
 var _dot: LaserDot
 var _view: ModelView
@@ -72,6 +72,8 @@ func _clip() -> StringName:
 	match _chase.act:
 		LaserChase.Act.HOP:
 			return &"hop_l" if _chase.paw == &"L" else &"hop_r"
+		LaserChase.Act.SWAT:
+			return &"swat_l" if _chase.paw == &"L" else &"swat_r"
 		LaserChase.Act.STALK:
 			return &"stalk"
 		LaserChase.Act.POUNCE:

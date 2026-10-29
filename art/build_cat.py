@@ -349,6 +349,33 @@ def _reach_hop(side, sign):
     return {0: lo(0), 4: hi(5 * sign), 8: lo(-8), 12: hi(-5 * sign), 16: lo(0)}
 
 
+def _swat(side, sign):
+    """Feet planted, a little desperate but not frantic: only the paw on the dot's side winds up
+    and slaps out and down at it, three times; `sign` is +1 for .L, -1 for .R (Arm rot Z)."""
+    lead, other = "Arm" + side, "Arm" + (".R" if side == ".L" else ".L")
+    # sideways, in the screen's plane: swung forward, a paw points at the camera and is lost from the front
+    # (raised above ~110°, a paw also hides behind the big head)
+    held = lambda s: dict(rot=(30, 0, 45 * s), scale=(1, 1, 1))  # paw up, ready
+    wound = dict(rot=(40, 0, 115 * sign), scale=(1, 1.3, 1))  # paw raised beside the cheek
+    slap = lambda out: dict(rot=(20, 0, out * sign), scale=(1, 1.6, 1))  # out and down, stretched at the dot
+    pose = lambda arm, dip, tilt: {
+        "Body": dict(loc=(0, -0.03 * dip, 0), rot=(2 + 4 * dip, 0, 0), scale=(1 + 0.04 * dip, 1 - 0.05 * dip, 1 + 0.04 * dip)),
+        "Head": dict(rot=(4 * dip, 0, tilt)), lead: arm, other: held(-sign), **_tail(tilt * 3)}
+    ready = pose(held(sign), 0, 0)
+    return {
+        0: ready,
+        3: pose(wound, 0, 3 * sign),
+        5: pose(slap(80), 1, -2 * sign),
+        8: ready,
+        11: pose(wound, 0, 4 * sign),
+        13: pose(slap(70), 1, -3 * sign),
+        16: ready,
+        19: pose(wound, 0, 3 * sign),
+        21: pose(slap(75), 1, -2 * sign),
+        24: ready,
+    }
+
+
 # crouched low at the dot, the paws drawn in under the chin; `wiggle` sways the rear
 # (squashed less than it is lowered: the Head inherits the Body's squash, and a flattened head
 # reads as seen from above)
@@ -410,6 +437,8 @@ ANIMS = {
             "Head": dict(rot=(-6, 0, 0)), **_arms(140), "Foot.L": dict(rot=(-30, 0, 0)), "Foot.R": dict(rot=(-30, 0, 0)), **_tail(10)},
         11: {"Root": dict(loc=(0, 0, 0)), **_landed, "Foot.L": dict(rot=(0, 0, 0)), "Foot.R": dict(rot=(0, 0, 0))},
     },
+    "swat_l": _swat(".L", 1),  # 1 s loop: within the paw's reach, the left paw swats three times
+    "swat_r": _swat(".R", -1),
     "pin": {  # one shot from the pounce's landing: both paws pressed down on the dot
         0: _landed,
         3: {"Body": dict(loc=(0, -0.08, 0), rot=(12, 0, 0), scale=(1.1, 0.86, 1.1)), "Head": dict(rot=(8, 0, 0)),

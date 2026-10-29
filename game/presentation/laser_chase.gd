@@ -3,10 +3,10 @@ extends RefCounted
 ## What one Cat does with the Laser Pointer's dot, decided from where the Cat stands on screen
 ## and what it was doing (docs/laser-pointer.md). Distances are in the screen's design space.
 
-enum Act { IDLE, WATCH, HOP, STALK, POUNCE, PIN, BITE, MISS }
+enum Act { IDLE, WATCH, HOP, STALK, POUNCE, PIN, BITE, MISS, SWAT }
 
-## Nearer than this the Cat bites at the dot.
-const BITE_DISTANCE := 110.0
+## Nearer than this the Cat's paw reaches the dot without a hop, and it swats at it.
+const REACH_DISTANCE := 110.0
 ## Nearer than this the Cat hunts the dot; further, it only watches it.
 const HUNT_DISTANCE := 420.0
 ## How long the dot must rest in the hunt band before the Cat crouches to stalk it.
@@ -31,7 +31,7 @@ var act := Act.IDLE
 var body_yaw := 0.0
 var head_yaw := 0.0
 var head_pitch := 0.0
-## The paw nearer the dot, "L" or "R", the one the Cat reaches out with while it hops.
+## The paw nearer the dot, "L" or "R", the one the Cat reaches out with while it hops or swats.
 var paw := &"L"
 ## Where the dot was when the Cat leapt at it.
 var _aim := Vector2.ZERO
@@ -59,7 +59,7 @@ func follow(cat: Rect2, dot: LaserDot, delta: float) -> void:
 func finish(dot: LaserDot) -> void:
 	match act:
 		Act.POUNCE:
-			if dot.visible and dot.position.distance_to(_aim) < BITE_DISTANCE:
+			if dot.visible and dot.position.distance_to(_aim) < REACH_DISTANCE:
 				act = Act.PIN
 			else:
 				act = Act.MISS
@@ -92,8 +92,8 @@ func _next(cat: Rect2, dot: LaserDot) -> Act:
 	if not dot.visible:
 		return Act.IDLE
 	var distance := dot.position.distance_to(cat.get_center())
-	if distance < BITE_DISTANCE:
-		return Act.BITE
+	if distance < REACH_DISTANCE:
+		return Act.SWAT
 	if distance > HUNT_DISTANCE:
 		return Act.WATCH
 	if dot.still >= STALK_AFTER or dot.position.y > cat.end.y:  # a dot below its feet is not leapt at

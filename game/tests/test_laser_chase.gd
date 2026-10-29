@@ -30,7 +30,7 @@ func chase(offset: Vector2) -> LaserChase:
 func test_the_cat_acts_on_the_distance_to_the_dot() -> void:
 	check_eq(chase(Vector2(600, 0)).act, LaserChase.Act.WATCH, "far away")
 	check_eq(chase(Vector2(0, -300)).act, LaserChase.Act.HOP, "near")
-	check_eq(chase(Vector2(60, 40)).act, LaserChase.Act.BITE, "right on the Cat")
+	check_eq(chase(Vector2(60, 40)).act, LaserChase.Act.SWAT, "within the paw's reach")
 
 
 func test_a_resting_mouse_puts_the_dot_out_and_every_cat_idles() -> void:
@@ -68,6 +68,11 @@ func test_touch_never_shows_the_dot() -> void:
 func test_the_cat_reaches_out_with_the_paw_on_the_dots_side() -> void:
 	check_eq(chase(Vector2(250, -100)).paw, &"L", "dot on the screen's right")
 	check_eq(chase(Vector2(-250, -100)).paw, &"R", "dot on the screen's left")
+
+
+func test_the_cat_swats_with_the_paw_on_the_dots_side() -> void:
+	check_eq(chase(Vector2(60, 40)).paw, &"L", "dot on the screen's right")
+	check_eq(chase(Vector2(-60, 40)).paw, &"R", "dot on the screen's left")
 
 
 func test_a_dot_wavering_right_above_the_cat_keeps_the_same_paw_out() -> void:
@@ -109,8 +114,8 @@ func test_a_cat_with_no_dot_to_see_faces_the_front() -> void:
 func test_the_band_edges_belong_to_the_nearer_band() -> void:
 	check_eq(chase(Vector2(LaserChase.HUNT_DISTANCE, 0)).act, LaserChase.Act.HOP, "at the hunt band's far edge")
 	check_eq(chase(Vector2(LaserChase.HUNT_DISTANCE + 1.0, 0)).act, LaserChase.Act.WATCH, "just beyond it")
-	check_eq(chase(Vector2(LaserChase.BITE_DISTANCE, 0)).act, LaserChase.Act.HOP, "at the bite band's edge")
-	check_eq(chase(Vector2(LaserChase.BITE_DISTANCE - 1.0, 0)).act, LaserChase.Act.BITE, "just inside it")
+	check_eq(chase(Vector2(LaserChase.REACH_DISTANCE, 0)).act, LaserChase.Act.HOP, "at the paw's reach")
+	check_eq(chase(Vector2(LaserChase.REACH_DISTANCE - 1.0, 0)).act, LaserChase.Act.SWAT, "just inside it")
 
 
 func test_a_dot_resting_near_the_cat_is_stalked() -> void:
@@ -188,7 +193,7 @@ func test_landing_on_the_dot_pins_it_then_bites_it() -> void:
 	var chase := pouncing(dot, Vector2(220, -100))
 	move(dot, CENTRE + Vector2(260, -100))
 	chase.finish(dot)
-	check_eq(chase.act, LaserChase.Act.PIN, "caught: the dot is a bite away from where the Cat aimed")
+	check_eq(chase.act, LaserChase.Act.PIN, "caught: the dot is within reach of where the Cat aimed")
 	chase.follow(CAT, dot, 0.1)
 	check_eq(chase.act, LaserChase.Act.PIN, "the paws stay down until they are done")
 	chase.finish(dot)
