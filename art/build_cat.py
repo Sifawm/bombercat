@@ -336,16 +336,30 @@ _hop_hi = lambda tilt: {"Root": dict(loc=(0, 0, 0.3)), "Body": dict(scale=(0.96,
                         "Foot.L": dict(rot=(-25, 0, 0)), "Foot.R": dict(rot=(-25, 0, 0)), **_arms(140), **_tail(tilt * 2)}
 
 
-def _swat(side, sign):
-    """One paw thrown out to the side and across the front; `sign` is +1 for .L, -1 for .R (Arm rot Z)."""
-    arm = "Arm" + side
-    return {
-        0: {},
-        3: {"Body": dict(rot=(-4, 0, 0)), "Head": dict(rot=(-4, 0, 0)), arm: dict(rot=(30, 0, 100 * sign))},  # out to the side
-        6: {"Body": dict(rot=(6, 0, 0)), "Head": dict(rot=(3, 0, 0)), arm: dict(rot=(60, 0, -10 * sign))},  # across the front
-        8: {arm: dict(rot=(55, 0, -5 * sign))},
-        13: {"Body": dict(rot=(0, 0, 0)), "Head": dict(rot=(0, 0, 0)), arm: dict(rot=(0, 0, 0))},
-    }
+def _reach_hop(side, sign):
+    """Small steady hops, cute, with the paw on the dot's side stretched out at it the whole time;
+    `sign` is +1 for .L, -1 for .R (Arm rot Z)."""
+    reach, tuck = "Arm" + side, "Arm" + (".R" if side == ".L" else ".L")
+    lo = lambda wave: {"Root": dict(loc=(0, 0, 0)), "Body": dict(scale=(1.05, 0.93, 1.05)), "Head": dict(rot=(0, 0, 0)),
+                       reach: dict(rot=(45, 0, (100 + wave) * sign), scale=(1, 1.5, 1)), tuck: dict(rot=(45, 0, -10 * sign)),
+                       "Foot.L": dict(rot=(0, 0, 0)), "Foot.R": dict(rot=(0, 0, 0)), **_tail(0)}
+    hi = lambda tilt: {"Root": dict(loc=(0, 0, 0.08)), "Body": dict(scale=(0.97, 1.04, 0.97)), "Head": dict(rot=(-4, 0, tilt)),
+                       reach: dict(rot=(45, 0, 110 * sign), scale=(1, 1.5, 1)), tuck: dict(rot=(55, 0, -10 * sign)),
+                       "Foot.L": dict(rot=(-15, 0, 0)), "Foot.R": dict(rot=(-15, 0, 0)), **_tail(tilt * 2)}
+    return {0: lo(0), 4: hi(5 * sign), 8: lo(-8), 12: hi(-5 * sign), 16: lo(0)}
+
+
+# crouched low at the dot, the paws drawn in under the chin; `wiggle` sways the rear
+# (squashed less than it is lowered: the Head inherits the Body's squash, and a flattened head
+# reads as seen from above)
+_crouch = lambda wiggle: {"Root": dict(loc=(wiggle * 0.004, 0, 0)), "Body": dict(loc=(0, -0.07, 0), rot=(2, 0, -wiggle),
+                                                                                 scale=(1.03, 0.96, 1.03)),
+                          "Head": dict(rot=(-6, 0, 0)), "Arm.L": dict(rot=(50, 0, 10)), "Arm.R": dict(rot=(50, 0, -10)),
+                          "Foot.L": dict(rot=(10, 0, 0)), "Foot.R": dict(rot=(10, 0, 0)), **_tail(wiggle * 4)}
+
+# the pounce's landing, paws first, where the pin starts
+_landed = {"Body": dict(loc=(0, -0.05, 0), rot=(8, 0, 0), scale=(1.08, 0.9, 1.08)), "Head": dict(rot=(2, 0, 0)),
+           "Arm.L": dict(rot=(80, 0, 0)), "Arm.R": dict(rot=(80, 0, 0)), **_tail(-6)}
 
 
 ANIMS = {
@@ -383,20 +397,26 @@ ANIMS = {
     "win": {  # 1 s loop: two happy hops with the arms up
         0: _hop_lo, 6: _hop_hi(6), 12: _hop_lo, 18: _hop_hi(-6), 24: _hop_lo,
     },
-    # The Laser Pointer's hunt (docs/laser-pointer.md). The game scales the pounce's height.
-    "pounce": {  # one shot: crouch, a hop as high as win's at the dot with the paws up, land on it
-        0: {},
-        4: {"Body": dict(loc=(0, -0.06, 0), rot=(6, 0, 0), scale=(1.06, 0.92, 1.06)), "Head": dict(rot=(-6, 0, 0)),
-            **_arms(20), **_tail(0)},
-        8: {"Root": dict(loc=(0, 0, 0.3)), "Body": dict(loc=(0, 0, 0), rot=(-6, 0, 0), scale=(0.95, 1.07, 0.95)),
-            "Head": dict(rot=(-6, 0, 0)), **_arms(140), "Foot.L": dict(rot=(-30, 0, 0)), "Foot.R": dict(rot=(-30, 0, 0)), **_tail(10)},
-        12: {"Root": dict(loc=(0, 0, 0)), "Body": dict(loc=(0, -0.05, 0), rot=(6, 0, 0), scale=(1.07, 0.9, 1.07)),
-             "Head": dict(rot=(0, 0, 0)), **_arms(60), "Foot.L": dict(rot=(0, 0, 0)), "Foot.R": dict(rot=(0, 0, 0)), **_tail(-6)},
-        18: {"Root": dict(loc=(0, 0, 0)), "Body": dict(loc=(0, 0, 0), rot=(0, 0, 0), scale=(1, 1, 1)), "Head": dict(rot=(0, 0, 0)),
-             **_arms(0), **_tail(0)},
+    # The Laser Pointer's hunt (docs/laser-pointer.md)
+    "hop_l": _reach_hop(".L", 1),  # 16-frame loop: two small hops, the left paw out at the dot
+    "hop_r": _reach_hop(".R", -1),
+    "stalk": {  # 16-frame loop: crouched, the rear wiggling, the tail twitching
+        0: _crouch(0), 3: _crouch(3), 6: _crouch(-3), 8: _crouch(0), 12: _crouch(0), 16: _crouch(0),
     },
-    "swat_l": _swat(".L", 1),  # one shot: wind one paw up and slap it down in front
-    "swat_r": _swat(".R", -1),
+    "pounce": {  # one shot from the stalk's crouch: down a little more, leap as high as win's, land paws first
+        0: _crouch(0),
+        3: {**_crouch(0), "Body": dict(loc=(0, -0.09, 0), rot=(4, 0, 0), scale=(1.05, 0.93, 1.05))},
+        7: {"Root": dict(loc=(0, 0, 0.3)), "Body": dict(loc=(0, 0, 0), rot=(-6, 0, 0), scale=(0.95, 1.07, 0.95)),
+            "Head": dict(rot=(-6, 0, 0)), **_arms(140), "Foot.L": dict(rot=(-30, 0, 0)), "Foot.R": dict(rot=(-30, 0, 0)), **_tail(10)},
+        11: {"Root": dict(loc=(0, 0, 0)), **_landed, "Foot.L": dict(rot=(0, 0, 0)), "Foot.R": dict(rot=(0, 0, 0))},
+    },
+    "pin": {  # one shot from the pounce's landing: both paws pressed down on the dot
+        0: _landed,
+        3: {"Body": dict(loc=(0, -0.08, 0), rot=(12, 0, 0), scale=(1.1, 0.86, 1.1)), "Head": dict(rot=(8, 0, 0)),
+            "Arm.L": dict(rot=(95, 0, 0)), "Arm.R": dict(rot=(95, 0, 0)), **_tail(8)},
+        9: {"Body": dict(loc=(0, -0.07, 0), rot=(11, 0, 0), scale=(1.09, 0.87, 1.09)), "Head": dict(rot=(6, 0, 0)),
+            "Arm.L": dict(rot=(92, 0, 0)), "Arm.R": dict(rot=(92, 0, 0)), **_tail(-8)},
+    },
     "bite": {  # one shot: draw the head back, lunge it forward at the dot with the paws out, chomp twice
         0: {},
         3: {"Root": dict(loc=(0, 0, 0)), "Body": dict(rot=(-4, 0, 0)), "Head": dict(rot=(-10, 0, 0))},

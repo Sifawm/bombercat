@@ -1,7 +1,8 @@
 # Laser Pointer
 
 On the title screen and wherever Cats are chosen, the mouse pointer becomes a laser dot and the
-Cats hunt it. This document is the spec of the first iteration and the analysis of the second.
+Cats hunt it. This document is the spec of the first iteration and of the second, which replaced
+the first's hops and swats: where they differ, the last section stands.
 
 ## Problem Statement
 
@@ -141,22 +142,37 @@ goes out and the Cats return to idle. The laser is decoration only: it chooses n
 
 ## Second Iteration: Stalk and the Missed Pounce
 
-Analysed and agreed, to be built after the first iteration. A real cat commits to a pounce when
-it leaves the ground and cannot correct it in the air; when the laser moves as it jumps, it lands
-where the dot was.
+Built after the first iteration. A real cat commits to a pounce when it leaves the ground and
+cannot correct it in the air; when the laser moves as it jumps, it lands where the dot was. Seen
+on screen, the first iteration's alternating pounce and swat read as restless rather than cute,
+and a Cat leaping at a dot below its feet made no sense, so the second iteration also replaced
+them.
 
-1. **Stalk.** When the dot has been still for about 0.6 s inside the hunt band, the Cat crouches
-   into a new looping clip, `stalk`: body low, rear wiggling, tail twitching, eyes locked on the
-   dot. Stalking happens only in the hunt band.
-2. **The pounce goes off** the moment the dot moves again: `pounce` at its full height.
-3. **The aim is committed.** On take-off the body's turn is frozen towards where the dot was;
-   in the air the Cat no longer follows it. As the Cat stays in its place, the miss is told by the
-   Cat landing facing an empty spot.
-4. **On landing:**
+1. **Hops.** While the dot moves in the hunt band, above the Cat's feet, the Cat hops on the spot
+   in a new looping clip, `hop_l` or `hop_r`: small steady hops (0.08 up), the paw nearer the dot
+   stretched out at it the whole time. The paw changes only once the dot is 40 px over to the
+   other side, so a dot wavering right above the Cat does not swap it back and forth. The hops no
+   longer get lower as the dot comes nearer, and the swat clips are gone.
+2. **Stalk.** When the dot has been still for 0.6 s inside the hunt band, or lies below the
+   Cat's feet, the Cat crouches into a new looping clip, `stalk`: body low, rear
+   wiggling, tail twitching, paws drawn in, eyes locked on the dot. It is lowered rather than
+   squashed, since the Head inherits the Body's squash and a flattened head reads as seen from
+   above. Stalking happens only in the hunt band.
+3. **The pounce goes off** the moment a stalked dot moves again, or rises above the
+   Cat's feet: `pounce`, from the stalk's crouch, at its full height (`win`'s 0.3 up).
+4. **The aim is committed.** On take-off the body's and head's turns are frozen towards where the
+   dot was; in the air the Cat no longer follows it, and the leap is not called off, not even when
+   the dot goes out. As the Cat stays in its place, the miss is told by the Cat landing facing an
+   empty spot.
+5. **On landing:**
    - if the dot is within the bite distance of the spot the Cat aimed at, it is a **catch**: the
-     paws pin it to the ground, then the Cat bites;
-   - otherwise it is a **miss**: the head snaps to where the dot is now, one ear flicks, a pause
-     of about 0.4 s, and the hunt carries on. The miss reaction is done by code, with no new clip.
-5. What it adds to the first iteration: the `stalk` clip, perhaps a `pin` clip for the catch, and
-   a small state machine per Cat (watch → hunt → stalk → in the air → land), which the hunt
-   decision's tests extend to cover.
+     paws pin it to the ground (`pin`), then the Cat bites;
+   - otherwise it is a **miss**: the body keeps facing the empty spot while the head snaps to where
+     the dot is now, one ear flicks back, a pause of 0.4 s, and the hunt carries on. The miss
+     reaction is done by code, with no new clip.
+6. **Looking down.** The head turns down at most 4° (up, still 25°): seen from above, the big head
+   reads far more turned down than it is, and any further hides the Cat's face.
+7. **The state machine.** The hunt decision keeps each Cat's state from one frame to the next
+   (idle, watch, hop, stalk, pounce, pin, bite, miss): the hunting Cat calls it every frame and
+   tells it when a one-shot clip (`pounce`, `pin`, `bite`) has ended, and it decides the catch or
+   the miss. Its tests cover the hops, the stalk, the committed pounce, the catch and the miss.

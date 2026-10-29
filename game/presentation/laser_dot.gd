@@ -10,24 +10,25 @@ const MOVING := 0.2
 
 var position := Vector2.ZERO
 var visible := false
-var _still := 0.0
+## How long since the mouse last moved.
+var still := 0.0
 
 
 ## Seen and moved a moment ago.
 func moving() -> bool:
-	return visible and _still <= MOVING
+	return visible and still <= MOVING
 
 
 func take(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and event.device != InputEvent.DEVICE_ID_EMULATION:  # not a finger
 		position = event.position
 		visible = true
-		_still = 0.0
+		still = 0.0
 
 
 func advance(delta: float) -> void:
-	_still += delta
-	if _still > TIMEOUT:
+	still += delta
+	if still > TIMEOUT:
 		visible = false
 
 
