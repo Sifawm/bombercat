@@ -43,6 +43,7 @@ theme/default_theme_scale=2.5
 
 environment/defaults/default_clear_color=Color(0.13, 0.17, 0.27, 1)
 
+anti_aliasing/quality/msaa_3d=2
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 

@@ -1,14 +1,24 @@
-"""Builds the chibi cats, each as ONE mesh with vertex colours (attribute "Col") and
-two shared materials (Cat_Fur, Cat_Gloss). Run inside Blender:
+"""Builds the chibi cats, each as ONE mesh with its colours baked into a texture (<name>_Skin,
+packed in the .blend) and two materials of its own (<name>_Fur, <name>_Gloss). Run inside
+Blender, or headless from the repository root and then save:
 
     exec(open(bpy.path.abspath("//build_cat.py")).read())
+    blender -b art/cats.blend -P art/build_cat.py --python-expr "import bpy; bpy.ops.wm.save_mainfile()"
 
 Cat faces -Y, feet on z=0, ~1.2 m tall. A Cat's palette is a dict of colour functions
-(world position -> linear RGB) per body part; see CATS at the bottom.
+(world position -> linear RGB) per body part; see CATS at the bottom. Each texel of the texture
+is coloured by those functions at the point of the body it covers, so pattern edges are as
+sharp as the texture, not as coarse as the mesh.
 """
 import bpy, bmesh, math
+import numpy as np
 from mathutils import Vector, Matrix, Euler
 from mathutils.geometry import interpolate_bezier
+
+TEXTURE = 2048
+## Texels each island's colour is spread beyond its edge, so mipmaps and filtering never
+## sample the empty space between islands.
+BLEED = 8
 
 FUR, GLOSS = 0, 1
 PINK, BLACK, WHITE = Vector((0.9, 0.42, 0.48)), Vector((0.004,) * 3), Vector((1, 1, 1))
@@ -35,16 +45,61 @@ def tail_w(i):
     return {"Tail%d" % (j + 1): 1 - t, "Tail%d" % (j + 2): t}
 
 
-def vc_mat(name, rough):
+def tex_mat(name, rough, image):
     m = bpy.data.materials.get(name) or bpy.data.materials.new(name)
     m.use_nodes = True
     nt = m.node_tree
     b = next(n for n in nt.nodes if n.type == "BSDF_PRINCIPLED")
-    a = next((n for n in nt.nodes if n.type == "VERTEX_COLOR"), None) or nt.nodes.new("ShaderNodeVertexColor")
-    a.layer_name = "Col"
-    nt.links.new(a.outputs["Color"], b.inputs["Base Color"])
+    t = next((n for n in nt.nodes if n.type == "TEX_IMAGE"), None) or nt.nodes.new("ShaderNodeTexImage")
+    t.image = image
+    nt.links.new(t.outputs["Color"], b.inputs["Base Color"])
     b.inputs["Roughness"].default_value = rough
     return m
+
+
+def bake(me, sources, name):
+    """The texture of mesh `me`: every texel inside a UV triangle gets the colour function of
+    that triangle's part, at the point it covers (`sources`: vertex index -> (point, function))."""
+    size = TEXTURE
+    rgb = np.zeros((size, size, 3), np.float32)
+    filled = np.zeros((size, size), bool)
+    uvs = me.uv_layers.active.data
+    me.calc_loop_triangles()
+    for tri in me.loop_triangles:
+        uv = np.array([uvs[l].uv for l in tri.loops]) * size - 0.5
+        pts = np.array([sources[v][0] for v in tri.vertices])
+        fn = sources[tri.vertices[0]][1]
+        lo = np.floor(uv.min(0)).astype(int).clip(0, size - 1)
+        hi = np.ceil(uv.max(0)).astype(int).clip(0, size - 1)
+        xs, ys = np.meshgrid(np.arange(lo[0], hi[0] + 1), np.arange(lo[1], hi[1] + 1))
+        (ax, ay), (bx, by), (cx, cy) = uv
+        area = (bx - ax) * (cy - ay) - (cx - ax) * (by - ay)
+        if abs(area) < 1e-12:
+            continue
+        w1 = ((xs - ax) * (cy - ay) - (cx - ax) * (ys - ay)) / area
+        w2 = ((bx - ax) * (ys - ay) - (xs - ax) * (by - ay)) / area
+        w0 = 1 - w1 - w2
+        inside = (w0 >= -0.02) & (w1 >= -0.02) & (w2 >= -0.02)  # a hair over, so no texel between triangles is missed
+        for x, y, a, b, c in zip(xs[inside], ys[inside], w0[inside], w1[inside], w2[inside]):
+            if not filled[y, x]:
+                rgb[y, x] = fn(Vector(a * pts[0] + b * pts[1] + c * pts[2]))
+                filled[y, x] = True
+    for _ in range(BLEED):
+        grown = rgb.copy()
+        for dy, dx in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+            src = np.roll(np.roll(rgb, dy, 0), dx, 1)
+            got = np.roll(np.roll(filled, dy, 0), dx, 1) & ~filled
+            grown[got] = src[got]
+            filled = filled | got
+        rgb = grown
+    img = bpy.data.images.get(name)
+    if img:
+        bpy.data.images.remove(img)
+    img = bpy.data.images.new(name, size, size)  # linear colours, stored as sRGB like any colour texture
+    srgb = np.where(rgb <= 0.0031308, rgb * 12.92, 1.055 * np.power(np.maximum(rgb, 0), 1 / 2.4) - 0.055)
+    img.pixels.foreach_set(np.dstack([srgb, np.ones((size, size))]).astype(np.float32).ravel())
+    img.pack()
+    return img
 
 
 def sstep(a, b, x):
@@ -65,7 +120,7 @@ def patches(base, *blobs):
     def fn(p):
         c = base(p) if callable(base) else base
         for centre, r, col in blobs:
-            e = max(r * 0.11, 0.022)  # edge no thinner than a quad, or it stair-steps
+            e = max(r * 0.04, 0.006)  # a soft edge, but only a few texels wide
             c = c.lerp(col, sstep(r + e, r - e, (p - centre).length))
         return c
     return fn
@@ -76,7 +131,7 @@ def blaze(top, brow=0.075, jaw=0.32):
     widens down the nose (`brow` = half-width there) and flares `jaw` wide over cheeks and chin."""
     def fn(p):
         w = -0.03 + brow * sstep(top, top - 0.14, p.z) + jaw * min(max((0.71 - p.z) / 0.15, 0), 1)
-        return sstep(w + 0.028, w - 0.028, abs(p.x)) * sstep(0.0, -0.08, p.y)
+        return sstep(w + 0.01, w - 0.01, abs(p.x)) * sstep(0.0, -0.08, p.y)
     return fn
 
 
@@ -85,12 +140,15 @@ CHIN = (0.012, -0.30, 0.59)  # small dark mark under the mouth
 
 def build(name, pal, x=0.0, collection="Cats"):
     bm = bmesh.new()
-    col = bm.verts.layers.float_color.new("Col")
+    uv = bm.loops.layers.uv.new("UVMap")
+    col = bm.verts.layers.float_color.new("Col")  # the game uses the texture; render_photo.py these
     dl = bm.verts.layers.deform.verify()
     cur = ["Body"]  # bone the next parts are skinned to
+    sources = {}  # vertex -> (where its part was painted, the part's colour function)
 
     def paint(verts, fn, mat):
         for v in verts:
+            sources[v] = (v.co.copy(), fn)
             v[col] = (*fn(v.co), 1)
             v[dl][GI[cur[0]]] = 1.0
         for f in {f for v in verts for f in v.link_faces}:
@@ -102,12 +160,12 @@ def build(name, pal, x=0.0, collection="Cats"):
         return Matrix.Translation(loc) @ q.to_matrix().to_4x4() @ Matrix.Diagonal((*scale, 1))
 
     def ball(loc, scale, fn, mat=FUR, rot=(0, 0, 0), seg=32):
-        vs = bmesh.ops.create_uvsphere(bm, u_segments=seg, v_segments=seg // 2, radius=1, matrix=TRS(loc, scale, rot))["verts"]
+        vs = bmesh.ops.create_uvsphere(bm, u_segments=seg, v_segments=seg // 2, radius=1, matrix=TRS(loc, scale, rot), calc_uvs=True)["verts"]
         paint(vs, fn, mat)
         return vs
 
     def cone(loc, scale, fn, rot=(0, 0, 0), r2=0.2):
-        vs = bmesh.ops.create_cone(bm, cap_ends=True, segments=20, radius1=1, radius2=r2, depth=2, matrix=TRS(loc, scale, rot))["verts"]
+        vs = bmesh.ops.create_cone(bm, cap_ends=True, segments=20, radius1=1, radius2=r2, depth=2, matrix=TRS(loc, scale, rot), calc_uvs=True)["verts"]
         paint(vs, fn, FUR)
 
     def tube(pts, radii, fn, closed=False, n=12, ring_w=None):
@@ -120,10 +178,13 @@ def build(name, pal, x=0.0, collection="Cats"):
             n1 = (ref - ref.dot(t) * t).normalized()
             n2 = t.cross(n1)
             rings.append([bm.verts.new(p + r * (math.cos(k * math.tau / n) * n1 + math.sin(k * math.tau / n) * n2)) for k in range(n)])
-        for i in range(len(rings) if closed else last):
+        count = len(rings) if closed else last
+        for i in range(count):
             A, B = rings[i], rings[(i + 1) % len(rings)]
             for k in range(n):
-                bm.faces.new((A[k], A[(k + 1) % n], B[(k + 1) % n], B[k]))
+                face = bm.faces.new((A[k], A[(k + 1) % n], B[(k + 1) % n], B[k]))
+                for loop, (u, w) in zip(face.loops, ((k, i), (k + 1, i), (k + 1, i + 1), (k, i + 1))):
+                    loop[uv].uv = (u / n, w / count)  # unwrapped, so the seam faces span the strip's end
         paint([v for r in rings for v in r], fn, FUR)
         for ring, w in zip(rings, ring_w or ()):
             for v in ring:
@@ -180,16 +241,31 @@ def build(name, pal, x=0.0, collection="Cats"):
     ball((0, -0.185, 0.44), (0.042,) * 3, flat(GOLD), GLOSS, seg=16)
 
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bm.verts.index_update()
+    sources = {v.index: (tuple(co), fn) for v, (co, fn) in sources.items()}
     old = bpy.data.objects.get(name)
     if old:
         bpy.data.objects.remove(old, do_unlink=True)
     me = bpy.data.meshes.new(name)
     bm.to_mesh(me)
     bm.free()
-    me.materials.append(vc_mat("Cat_Fur", 0.75))
-    me.materials.append(vc_mat("Cat_Gloss", 0.12))
     ob = bpy.data.objects.new(name, me)
     bpy.data.collections[collection].objects.link(ob)
+
+    # every part an island of the texture, each as big as its share of the body
+    for o in bpy.context.view_layer.objects:
+        o.select_set(False)
+    ob.select_set(True)
+    bpy.context.view_layer.objects.active = ob
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.uv.select_all(action="SELECT")
+    bpy.ops.uv.average_islands_scale()
+    bpy.ops.uv.pack_islands(margin=0.004)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    skin = bake(me, sources, name + "_Skin")
+    me.materials.append(tex_mat(name + "_Fur", 0.75, skin))
+    me.materials.append(tex_mat(name + "_Gloss", 0.12, skin))
     for g in GROUPS:
         ob.vertex_groups.new(name=g)
     return rig(name, ob, x, collection)
@@ -265,7 +341,7 @@ ANIMS = {
         12: {"Body": _breath, "Head": dict(rot=(2, 0, 3)), **_tail(14)},
         24: {"Body": _rest, "Head": dict(rot=(0, 0, 0)), **_tail(0)},
         28: {"Ear.L": dict(rot=(0, 0, 0))},
-        31: {"Ear.L": dict(rot=(0, 0, -20))},
+        31: {"Ear.L": dict(rot=(-20, 0, 0))},  # flicked back: no wider than the head, so the menus need no room for it
         34: {"Ear.L": dict(rot=(0, 0, 0))},
         36: {"Body": _breath, "Head": dict(rot=(2, 0, -3)), **_tail(-14)},
         48: {"Body": _rest, "Head": dict(rot=(0, 0, 0)), "Ear.L": dict(rot=(0, 0, 0)), **_tail(0)},

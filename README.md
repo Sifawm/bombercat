@@ -107,8 +107,21 @@ From the repository root:
 ```sh
 blender -b art/cats.blend -P art/build_props.py \
   --python-expr "import bpy; bpy.ops.wm.save_mainfile()"   # only after editing a build script
+blender -b art/cats.blend -P art/build_cat.py \
+  --python-expr "import bpy; bpy.ops.wm.save_mainfile()"   # the Cats, with their textures (~3 min)
 blender -b art/cats.blend -P art/export_glb.py   # writes game/assets/models/*.glb
 godot --headless --path game --import            # re-imports them
+```
+
+Importing gives every model the cartoon look (`game/assets/models/use_vertex_colors.gd`). After
+changing that script, delete `game/.godot/imported/*.glb-*.scn` so the models are imported again.
+
+Every picture of a Cat, a Bomb, a Powerup or a Map comes from these models
+([ADR 0006](docs/adr/0006-pictures-come-from-the-game-models.md)): render them again whenever a
+model or the look changes. The Cats' portraits and faces:
+
+```sh
+godot --path game -s tools/render_pictures.gd   # needs a window, not --headless
 ```
 
 The picture of each Map that Configure Match and Map Select show is rendered from the Maps the
