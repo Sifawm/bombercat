@@ -2,6 +2,11 @@ import { bombercat, type Games, type Profile } from '@bombercat/shared';
 import { createPorter, defineGame } from '@porterkit/client';
 import { exposeToGodot } from '@porterkit/godot';
 import { showDownload } from './splash';
+import favicon from '../../game/assets/icons/bomb.png';
+
+// Imported, not linked from index.html: the dev server serves nothing outside web/ that the page
+// asks for itself, only what a module or a stylesheet imports.
+document.head.append(Object.assign(document.createElement('link'), { rel: 'icon', href: favicon }));
 
 /** Godot's loader, from the classic script of `index.html`. */
 declare const Engine: new (config: object) => { startGame(): Promise<void> };
