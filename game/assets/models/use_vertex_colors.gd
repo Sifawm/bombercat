@@ -11,6 +11,9 @@ const OUTLINE: Shader = preload("res://assets/models/outline.gdshader")
 const GLOSSY := 0.35
 ## How soft the edge between light and shade is.
 const SHADE_EDGE := 0.04
+## The roughness of a glossy part, which sets the size of its toon highlight: from the models'
+## 0.12 it lit everything within about 45 degrees, whitening small parts such as a Bomb's eyes.
+const HIGHLIGHT := 0.03
 
 
 func _post_import(scene: Node) -> Object:
@@ -21,12 +24,18 @@ func _post_import(scene: Node) -> Object:
 		for surface in node.mesh.get_surface_count():
 			var material: BaseMaterial3D = node.mesh.surface_get_material(surface)
 			material.vertex_color_use_as_albedo = material.albedo_texture == null  # the Cats are textured
+			if material.emission_enabled:
+				# Glowing parts (a Bomb's eyes and spark) shine in their own colour, as in Blender: the
+				# importer turns their emission into plain white.
+				material.emission_enabled = false
+				material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 			material.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
 			if material.roughness > GLOSSY:
 				material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 				material.roughness = SHADE_EDGE  # toon diffuse uses it as the width of the edge
 			else:
 				material.specular_mode = BaseMaterial3D.SPECULAR_TOON
+				material.roughness = HIGHLIGHT
 			material.next_pass = outline
 	return scene
 

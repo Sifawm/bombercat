@@ -1,15 +1,20 @@
 extends Node
-## Renders the still pictures of the Cats (assets/portraits and assets/faces) and of the Maps
-## (assets/maps) from the game's own models, so they always look like what is played (ADR 0006):
-## the Cats framed and lit as ModelView shows them, the Maps lit as a Round lights them. Run it
-## again whenever a model, a Map or the cartoon look changes. It is a scene, so the game's autoloads
-## are there, and needs a window, so not --headless:
+## Renders the still pictures of the Cats (assets/portraits and assets/faces), of the Powerups,
+## Bombs and Crates (assets/icons, the splash Bomb) and of the Maps (assets/maps) from the game's
+## own models, so they always look like what is played (ADR 0006): models framed and lit as
+## ModelView shows them, the Maps lit as a Round lights them. Run it again whenever a model, a Map
+## or the cartoon look changes. It is a scene, so the game's autoloads are there, and needs a
+## window, so not --headless:
 ##
 ##     godot --path game tools/render_pictures.tscn
 
 const ROUND_VIEW: PackedScene = preload("res://presentation/round_view.tscn")
 const PORTRAIT := Vector2i(312, 480)
 const FACE := 240
+## Each picture in assets/icons is the model of the same name.
+const ICONS := "res://assets/icons"
+const ICON := Vector2i(160, 160)
+const SPLASH_BOMB := Vector2i(303, 480)
 ## Rendered this many times larger, then shrunk, to smooth the edges.
 const OVERSAMPLE := 2
 ## The face is a square of the portrait, centred, this wide and starting this far down (fractions
@@ -30,6 +35,10 @@ const MAP_MARGIN := 1.03
 func _ready() -> void:
 	for pick in Roster.CATS.size():
 		await _render_cat(pick)
+	for file in DirAccess.get_files_at(ICONS):
+		if file.ends_with(".png"):
+			await _render_model(file.get_basename(), ICON, ICONS.path_join(file))
+	await _render_model("bomb", SPLASH_BOMB, "res://assets/splash/bomb.png")
 	for file in DirAccess.get_files_at("res://maps"):
 		if file.ends_with(".tscn"):
 			await _render_map(file.get_basename())
@@ -37,7 +46,7 @@ func _ready() -> void:
 
 
 func _render_cat(pick: int) -> void:
-	var view := ModelView.new(Roster.cat_scene(pick), Vector2(PORTRAIT * OVERSAMPLE), false, true)
+	var view := ModelView.new(Roster.cat_scene(pick), Vector2(PORTRAIT * OVERSAMPLE), true)
 	view.play("idle")
 	(view.find_children("*", "AnimationPlayer", true, false)[0] as AnimationPlayer).pause()  # the same pose every run
 	add_child(view)
@@ -50,6 +59,15 @@ func _render_cat(pick: int) -> void:
 	face.save_png("res://assets/faces/%s.png" % name)
 	image.resize(PORTRAIT.x, PORTRAIT.y, Image.INTERPOLATE_LANCZOS)
 	image.save_png("res://assets/portraits/%s.png" % name)
+	view.queue_free()
+
+
+func _render_model(model: String, size: Vector2i, path: String) -> void:
+	var view := ModelView.new(load("res://assets/models/%s.glb" % model), Vector2(size * OVERSAMPLE))
+	add_child(view)
+	var image := await _drawn(view.get_child(0) as SubViewport)
+	image.resize(size.x, size.y, Image.INTERPOLATE_LANCZOS)
+	image.save_png(path)
 	view.queue_free()
 
 

@@ -118,8 +118,8 @@ changing that script, delete `game/.godot/imported/*.glb-*.scn` so the models ar
 
 Every picture of a Cat, a Bomb, a Powerup or a Map comes from these models
 ([ADR 0006](docs/adr/0006-pictures-come-from-the-game-models.md)): render them again whenever a
-model or the look changes. The Cats' portraits and faces, and the picture of each Map that
-Configure Match and Map Select show:
+model or the look changes. The Cats' portraits and faces, the icons, the splash Bomb and the
+picture of each Map that Configure Match and Map Select show:
 
 ```sh
 godot --path game tools/render_pictures.tscn   # needs a window, not --headless

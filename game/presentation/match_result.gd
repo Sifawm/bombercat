@@ -92,7 +92,7 @@ static func _champion(pick: int, color: Color) -> VBoxContainer:
 	var champion := VBoxContainer.new()
 	champion.add_theme_constant_override("separation", 0)
 	champion.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var cat := ModelView.new(Roster.cat_scene(pick), Vector2(312, 481), false, true)
+	var cat := ModelView.new(Roster.cat_scene(pick), Vector2(312, 481), true)
 	cat.play("win")
 	champion.add_child(cat)
 	var plate := PanelContainer.new()

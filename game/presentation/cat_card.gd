@@ -50,7 +50,7 @@ func _init(pick: int, card_size: Vector2, portrait_height: int) -> void:
 		mark.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		portrait.add_child(mark)
 	else:
-		var cat := ModelView.new(Roster.cat_scene(pick), Vector2(193, 300), false, true)
+		var cat := ModelView.new(Roster.cat_scene(pick), Vector2(193, 300), true)
 		cat.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		cat.size_flags_vertical = Control.SIZE_SHRINK_END
 		cat.mouse_filter = Control.MOUSE_FILTER_IGNORE

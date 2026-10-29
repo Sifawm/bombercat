@@ -30,7 +30,7 @@ static var last_cat := 0
 var _room_id := Online.room_in_address()
 var _panel := Ui.panel()
 var _bomb: TextureRect
-var _cat := ModelView.new(Roster.cat_scene(last_cat), CAT.size, false, true)
+var _cat := ModelView.new(Roster.cat_scene(last_cat), CAT.size, true)
 var _subtitle := Ui.label("You've been invited to a Room", 32, Ui.INK, Ui.FREDOKA_MEDIUM)
 var _name_field := Ui.text_field(Vector2(640, 104))
 ## Where a Notice goes: under the field, under it and over the button, or under the button.
