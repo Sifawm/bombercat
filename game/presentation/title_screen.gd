@@ -31,14 +31,16 @@ func _init() -> void:
 	Ui.picture("res://assets/splash/wordmark_bomber.png", BOMBER, _logo)
 	Ui.picture("res://assets/splash/wordmark_cat.png", CAT, _logo)
 	Ui.picture("res://assets/title/platform.png", PLATFORM, frame)
+	var laser := LaserPointer.new()
 	for pick in Roster.CATS.size():
 		var slot := Rect2(CAT_SLOT.position + Vector2(CAT_STEP * pick, 0.0), CAT_SLOT.size)
 		frame.add_child(_ground_shadow(slot))
-		var cat := ModelView.new(Roster.cat_scene(pick), slot.size, true)
+		var phase := float(pick) / Roster.CATS.size()  # out of step, as five cats would be
+		var cat := LaserCat.new(Roster.cat_scene(pick), slot.size, laser.dot, phase)
 		cat.position = slot.position
-		cat.play("idle", float(pick) / Roster.CATS.size())  # out of step, as five cats would be
 		frame.add_child(cat)
 	frame.add_child(_menu())
+	add_child(laser)
 
 
 func _ready() -> void:

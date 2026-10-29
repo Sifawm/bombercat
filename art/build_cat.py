@@ -335,6 +335,19 @@ _hop_lo = {"Root": dict(loc=(0, 0, 0)), "Body": dict(scale=(1.06, 0.92, 1.06)), 
 _hop_hi = lambda tilt: {"Root": dict(loc=(0, 0, 0.3)), "Body": dict(scale=(0.96, 1.06, 0.96)), "Head": dict(rot=(-12, 0, tilt)),
                         "Foot.L": dict(rot=(-25, 0, 0)), "Foot.R": dict(rot=(-25, 0, 0)), **_arms(140), **_tail(tilt * 2)}
 
+
+def _swat(side, sign):
+    """One paw thrown out to the side and across the front; `sign` is +1 for .L, -1 for .R (Arm rot Z)."""
+    arm = "Arm" + side
+    return {
+        0: {},
+        3: {"Body": dict(rot=(-4, 0, 0)), "Head": dict(rot=(-4, 0, 0)), arm: dict(rot=(30, 0, 100 * sign))},  # out to the side
+        6: {"Body": dict(rot=(6, 0, 0)), "Head": dict(rot=(3, 0, 0)), arm: dict(rot=(60, 0, -10 * sign))},  # across the front
+        8: {arm: dict(rot=(55, 0, -5 * sign))},
+        13: {"Body": dict(rot=(0, 0, 0)), "Head": dict(rot=(0, 0, 0)), arm: dict(rot=(0, 0, 0))},
+    }
+
+
 ANIMS = {
     "idle": {  # 2 s loop: breathing, head sway, tail swish, one ear twitch
         0: {"Body": _rest, "Head": dict(rot=(0, 0, 0)), "Ear.L": dict(rot=(0, 0, 0)), **_tail(0)},
@@ -369,6 +382,31 @@ ANIMS = {
     },
     "win": {  # 1 s loop: two happy hops with the arms up
         0: _hop_lo, 6: _hop_hi(6), 12: _hop_lo, 18: _hop_hi(-6), 24: _hop_lo,
+    },
+    # The Laser Pointer's hunt (docs/laser-pointer.md). The game scales the pounce's height.
+    "pounce": {  # one shot: crouch, a hop as high as win's at the dot with the paws up, land on it
+        0: {},
+        4: {"Body": dict(loc=(0, -0.06, 0), rot=(6, 0, 0), scale=(1.06, 0.92, 1.06)), "Head": dict(rot=(-6, 0, 0)),
+            **_arms(20), **_tail(0)},
+        8: {"Root": dict(loc=(0, 0, 0.3)), "Body": dict(loc=(0, 0, 0), rot=(-6, 0, 0), scale=(0.95, 1.07, 0.95)),
+            "Head": dict(rot=(-6, 0, 0)), **_arms(140), "Foot.L": dict(rot=(-30, 0, 0)), "Foot.R": dict(rot=(-30, 0, 0)), **_tail(10)},
+        12: {"Root": dict(loc=(0, 0, 0)), "Body": dict(loc=(0, -0.05, 0), rot=(6, 0, 0), scale=(1.07, 0.9, 1.07)),
+             "Head": dict(rot=(0, 0, 0)), **_arms(60), "Foot.L": dict(rot=(0, 0, 0)), "Foot.R": dict(rot=(0, 0, 0)), **_tail(-6)},
+        18: {"Root": dict(loc=(0, 0, 0)), "Body": dict(loc=(0, 0, 0), rot=(0, 0, 0), scale=(1, 1, 1)), "Head": dict(rot=(0, 0, 0)),
+             **_arms(0), **_tail(0)},
+    },
+    "swat_l": _swat(".L", 1),  # one shot: wind one paw up and slap it down in front
+    "swat_r": _swat(".R", -1),
+    "bite": {  # one shot: draw the head back, lunge it forward at the dot with the paws out, chomp twice
+        0: {},
+        3: {"Root": dict(loc=(0, 0, 0)), "Body": dict(rot=(-4, 0, 0)), "Head": dict(rot=(-10, 0, 0))},
+        6: {"Root": dict(loc=(0, -0.12, 0)), "Body": dict(rot=(6, 0, 0)), "Head": dict(rot=(4, 0, 6), scale=(1, 1, 1)),
+            "Arm.L": dict(rot=(70, 0, 0)), "Arm.R": dict(rot=(70, 0, 0))},
+        8: {"Head": dict(rot=(-4, 0, -6), scale=(1.08, 0.9, 1.08))},
+        10: {"Head": dict(rot=(5, 0, 6), scale=(1, 1, 1))},
+        12: {"Head": dict(rot=(-2, 0, -4), scale=(1.08, 0.9, 1.08))},
+        16: {"Root": dict(loc=(0, 0, 0)), "Body": dict(rot=(0, 0, 0)), "Head": dict(rot=(0, 0, 0), scale=(1, 1, 1)),
+             "Arm.L": dict(rot=(0, 0, 0)), "Arm.R": dict(rot=(0, 0, 0))},
     },
 }
 _PROP = dict(rot="rotation_euler", loc="location", scale="scale")

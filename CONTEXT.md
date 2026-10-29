@@ -101,7 +101,7 @@ The Powerup that increases a Cat's movement speed.
 
 **Paw Swipe**:
 The Powerup that lets a Cat push a Bomb by walking into it, making it slide until it hits something.
-_Avoid_: Kick
+_Avoid_: Kick; swipe or swat for the Cat's paw strike at the Laser Pointer (that is a swat)
 
 **Nine Lives**:
 The Powerup that lets a Cat survive one Explosion. It does not stack.
@@ -140,6 +140,10 @@ The calico (tricolor) Cat.
 **Ada Lovelace**:
 The white Cat with a chocolate mask (the "stray" model).
 _Avoid_: Callejero
+
+**Laser Pointer**:
+The mouse pointer on the screens that show the Cats (the title screen, Cat Select, the WaitingRoom): a red dot the Cats watch, hop and swat at, and bite. It is decoration and chooses nothing (`docs/laser-pointer.md`).
+_Avoid_: Cursor (for the dot), Paw Swipe (for the swat)
 
 ### Online
 

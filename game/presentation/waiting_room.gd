@@ -24,6 +24,7 @@ const CARD := Vector2(300, 460)
 const PORTRAIT_HEIGHT := 352
 
 var _cards: Array[CatCard] = []
+var _laser := LaserPointer.new()
 var _copy := Ui.button("Copy Invite Link", _copy_link)
 var _copied := VBoxContainer.new()
 var _lock := Ui.button("", _toggle_lock)
@@ -55,7 +56,7 @@ func _init() -> void:
 	roster.alignment = BoxContainer.ALIGNMENT_CENTER
 	roster.add_theme_constant_override("separation", 32)
 	for pick in Roster.CATS.size():
-		var card := CatCard.new(pick, CARD, PORTRAIT_HEIGHT)
+		var card := CatCard.new(pick, CARD, PORTRAIT_HEIGHT, _laser.dot)
 		card.button.pressed.connect(_choose.bind(pick))
 		_cards.append(card)
 		roster.add_child(card)
@@ -65,6 +66,7 @@ func _init() -> void:
 	centre.add_child(roster)
 	frame.add_child(centre)
 	_footer(frame)
+	add_child(_laser)
 
 
 func _actions() -> HBoxContainer:

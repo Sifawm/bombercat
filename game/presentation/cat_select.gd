@@ -31,6 +31,7 @@ var _cards: Array[CatCard] = []
 var _controls: Array[Control] = []
 var _back := Ui.keys(["Esc"], "Back")
 var _middle := CenterContainer.new()
+var _laser := LaserPointer.new()
 
 
 func _init() -> void:
@@ -48,7 +49,7 @@ func _init() -> void:
 	row.size = ROW.size
 	row.add_theme_constant_override("separation", 32)
 	for index in Roster.CATS.size() + 1:
-		var card := CatCard.new(index if index < Roster.CATS.size() else -1, CARD, PORTRAIT_HEIGHT)
+		var card := CatCard.new(index if index < Roster.CATS.size() else -1, CARD, PORTRAIT_HEIGHT, _laser.dot)
 		card.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		card.button.focus_mode = Control.FOCUS_NONE  # the cursors choose, not the focus
 		card.button.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -75,6 +76,7 @@ func _init() -> void:
 	footer.add_child(_controls[1])
 	frame.add_child(footer)
 	_refresh()
+	add_child(_laser)
 
 
 func _process(_delta: float) -> void:

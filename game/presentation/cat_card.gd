@@ -10,8 +10,9 @@ var button := Button.new()
 var _tags := HBoxContainer.new()
 
 
-## `pick` is the index in Roster.CATS, or -1 for Random. The sky is `portrait_height` tall.
-func _init(pick: int, card_size: Vector2, portrait_height: int) -> void:
+## `pick` is the index in Roster.CATS, or -1 for Random. The sky is `portrait_height` tall. The
+## Cat hunts the Laser Pointer's `dot`.
+func _init(pick: int, card_size: Vector2, portrait_height: int, dot: LaserDot) -> void:
 	alignment = BoxContainer.ALIGNMENT_END
 	add_theme_constant_override("separation", 0)
 	_tags.custom_minimum_size.y = TAG_HEIGHT
@@ -50,11 +51,9 @@ func _init(pick: int, card_size: Vector2, portrait_height: int) -> void:
 		mark.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		portrait.add_child(mark)
 	else:
-		var cat := ModelView.new(Roster.cat_scene(pick), Vector2(193, 300), true)
+		var cat := LaserCat.new(Roster.cat_scene(pick), Vector2(193, 300), dot, float(pick) / Roster.CATS.size())
 		cat.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		cat.size_flags_vertical = Control.SIZE_SHRINK_END
-		cat.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		cat.play("idle", float(pick) / Roster.CATS.size())
 		portrait.add_child(cat)
 	column.add_child(Ui.label("Random" if pick == -1 else Roster.cat_name(pick), 32, Ui.INK, Ui.LILITA))
 
