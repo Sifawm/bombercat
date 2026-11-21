@@ -79,6 +79,8 @@ var _hud: RoundHud
 var _framed_size := Vector2i.ZERO
 var _pause_menu := PauseMenu.new()
 var _countdown := Ui.title("", COUNTDOWN_SIZE)
+var _start_held := false
+var _arena_built := false
 
 @onready var _camera: Camera3D = $Camera
 @onready var _result_label: Label = $Hud/Result
@@ -97,11 +99,35 @@ func _ready() -> void:
 	start_match()
 
 
+## Holds the Round start gate so Cats stay at DROP_HEIGHT and the countdown does not tick
+## until the Match loading screen releases it.
+func hold_start() -> void:
+	_start_held = true
+
+
+## Returns true once the 3D arena (Map, Crates, Portals, HUD and Cats) has been built.
+func is_arena_built() -> bool:
+	return _arena_built
+
+
+## Releases the start gate: Round music begins, Cats drop from DROP_HEIGHT, and the countdown
+## starts ticking. Safe to call more than once.
+func release_start() -> void:
+	if not _start_held:
+		return
+	_start_held = false
+	Audio.play_music(&"music_round")
+	for view in _cat_views:
+		view.drop()
+
+
 func _exit_tree() -> void:
 	Engine.time_scale = 1.0  # in case it leaves in the middle of the slow motion
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _start_held:
+		return
 	if event.is_action_pressed(PauseMenu.PAUSE_ACTION):
 		get_viewport().set_input_as_handled()
 		_request_pause()
@@ -134,7 +160,7 @@ func _create_match(map: MapData) -> Match:
 
 
 func _physics_process(delta: float) -> void:
-	if _round.finished:
+	if _start_held or _round.finished:
 		return
 	if _countdown_left > 0.0:
 		_count_down(_countdown_left - delta)
@@ -176,6 +202,8 @@ func _clear_go() -> void:
 
 
 func _process(delta: float) -> void:
+	if _start_held:
+		return
 	for player in _cat_views.size():
 		var cat := _round.cats[player]
 		if cat.position.distance_to(_cat_positions[player]) > 1.0:
@@ -214,6 +242,7 @@ func start_match() -> void:
 	map_node.free()
 	if map.spawn_points.size() < cat_picks.size():
 		_result_label.text = "This Map needs %d Spawn Points" % cat_picks.size()
+		_arena_built = true
 		set_physics_process(false)
 		set_process(false)
 		return
@@ -261,7 +290,8 @@ func _start_round() -> void:
 	_slow_motion = false
 	_hurry_second = 0
 	_music_is_faster = false
-	Audio.play_music(&"music_round")
+	if not _start_held:
+		Audio.play_music(&"music_round")
 
 	_map_node = map_scene.instantiate()
 	_world.add_child(_map_node)
@@ -297,10 +327,14 @@ func _start_round() -> void:
 	for player in cat_picks.size():
 		var view := CatView.new(Roster.cat_scene(cat_picks[player]))
 		_place(view, _round.cats[player].position)
-		view.drop()
+		if _start_held:
+			view.hold_at_drop()
+		else:
+			view.drop()
 		_cat_views.append(view)
 		_cat_positions.append(_round.cats[player].position)
 		_cat_moving.append(false)
+	_arena_built = true
 
 
 ## The first Bomb, Explosion and burst of a Round would freeze the picture a moment while the

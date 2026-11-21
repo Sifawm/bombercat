@@ -149,7 +149,7 @@ func _collected_tile(_player: int) -> Vector2i:
 
 
 func _physics_process(delta: float) -> void:
-	if _round.finished:
+	if _start_held or _round.finished:
 		return
 	var left := maxf(Online.porter.timer_remaining("countdown") / 1000.0, 0.0)
 	if left > 0.0 or _countdown_left > 0.0:

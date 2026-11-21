@@ -51,11 +51,30 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## Fades to black, swaps the screens and fades back in. Menus share one music loop.
 func _show(screen: Node, menu_music: bool = true) -> void:
+	_swap(screen, true, menu_music)
+
+
+## Swaps the current screen for `screen` without a black fade. Used when entering a Match so
+## the loading overlay appears immediately over the arena.
+func _swap_without_fade(screen: Node) -> void:
+	_swap(screen, false, false)
+
+
+func _swap(screen: Node, fade: bool, menu_music: bool) -> void:
 	screen.process_mode = Node.PROCESS_MODE_PAUSABLE
-	var fade := create_tween()
+	if not fade:
+		if _screen != null:
+			_screen.queue_free()
+		_screen = screen
+		add_child(screen)
+		move_child(screen, 0)
+		if menu_music:
+			Audio.play_music(&"music_menu")
+		return
+	var tween := create_tween()
 	if _screen != null:
-		fade.tween_property(_curtain, "color:a", 1.0, FADE_SECONDS)
-	fade.tween_callback(func() -> void:
+		tween.tween_property(_curtain, "color:a", 1.0, FADE_SECONDS)
+	tween.tween_callback(func() -> void:
 		if _screen != null:
 			_screen.queue_free()
 		_screen = screen
@@ -63,7 +82,7 @@ func _show(screen: Node, menu_music: bool = true) -> void:
 		move_child(screen, 0)
 		if menu_music:
 			Audio.play_music(&"music_menu"))
-	fade.tween_property(_curtain, "color:a", 0.0, FADE_SECONDS)
+	tween.tween_property(_curtain, "color:a", 0.0, FADE_SECONDS)
 
 
 func _show_title() -> void:
@@ -123,7 +142,10 @@ func _show_room_screen() -> void:
 			var view: Node = ROUND_VIEW.instantiate()
 			view.set_script(OnlineRoundView)
 			(view as OnlineRoundView).quit_requested.connect(Online.porter.leave)
-			_show(view, false)  # it plays the Round music itself
+			(view as RoundView).map_scene = OnlineRoundView.map_scene_of(Online.porter.game)
+			var names := PackedStringArray(Online.porter.game.state.players)
+			(view as RoundView).cat_picks.assign(Array(names).map(Online.cat_of))
+			_enter_match(view as RoundView)
 		"result":
 			_show(_online_result(game))
 		"configure":
@@ -171,7 +193,14 @@ func _start_match() -> void:
 	view.cat_picks = _picks
 	view.match_finished.connect(_show_match_result)
 	view.quit_requested.connect(_show_title)
-	_show(view, false)  # it plays the Round music itself
+	_enter_match(view)
+
+
+## Adds a Match view under the loading overlay without fading to black first.
+func _enter_match(view: RoundView) -> void:
+	view.hold_start()
+	_swap_without_fade(view)
+	view.add_child(MatchLoadingScreen.new(view))
 
 
 func _show_match_result(game_match: Match) -> void:

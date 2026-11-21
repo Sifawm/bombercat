@@ -105,9 +105,15 @@ func play(animation: String) -> void:
 
 ## Falls from the sky onto its Tile.
 func drop() -> void:
-	_model.position.y = DROP_HEIGHT
+	hold_at_drop()
 	create_tween().tween_property(_model, "position:y", 0.0, DROP_SECONDS) \
 			.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+
+
+## Poses the Cat at DROP_HEIGHT without animating, so the Match loading screen can hold it
+## there until the arena is revealed.
+func hold_at_drop() -> void:
+	_model.position.y = DROP_HEIGHT
 
 
 func meow() -> void:
