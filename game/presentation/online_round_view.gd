@@ -129,6 +129,10 @@ func _request_pause() -> void:
 		_pause_menu.open()
 
 
+func _on_controller_disconnected(_player: int) -> void:
+	pass  # Online Matches never pause automatically for a local controller disconnect.
+
+
 func _show_pause(game: Variant) -> void:
 	if game == null:
 		return

@@ -93,6 +93,7 @@ func _ready() -> void:
 	_countdown.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	$Hud.add_child(_countdown)
 	$Hud.add_child(_pause_menu)
+	GamepadRoster.assignments_changed.connect(_on_assignments_changed)
 	start_match()
 
 
@@ -108,6 +109,19 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _request_pause() -> void:
 	_pause_menu.open()
+
+
+func _on_assignments_changed(disconnected_player: int) -> void:
+	if disconnected_player == GamepadRoster.NO_DEVICE:
+		return
+	_on_controller_disconnected(disconnected_player)
+
+
+func _on_controller_disconnected(player: int) -> void:
+	if _round == null or _round.finished:
+		return
+	_pause_menu.show_notice("Player %d controller disconnected" % (player + 1))
+	_request_pause()
 
 
 ## What to call a Player on screen.

@@ -75,6 +75,8 @@ func _init() -> void:
 	footer.add_child(_middle)
 	footer.add_child(_controls[1])
 	frame.add_child(footer)
+	_rebuild_footers()
+	GamepadRoster.assignments_changed.connect(_rebuild_footers)
 	_refresh()
 	add_child(_laser)
 
@@ -99,6 +101,26 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel") and _picks.has(-1):  # both ready: already on the way to Map Select
 		Audio.play(&"ui_cancel")
 		cancelled.emit()
+
+
+## Rebuilds the footer KeyCaps for each Player and the centre Back prompt when controllers
+## connect or disconnect.
+func _rebuild_footers(_disconnected_player: int = -1) -> void:
+	for player in PLAYERS:
+		var controls := _controls[player]
+		while controls.get_child_count() > 1:
+			var child := controls.get_child(controls.get_child_count() - 1)
+			controls.remove_child(child)
+			child.queue_free()
+		if GamepadRoster.has_gamepad(player):
+			controls.add_child(Ui.keys(["Stick", "D-pad"], "Move"))
+			controls.add_child(Ui.keys(["A"], "Choose"))
+		else:
+			controls.add_child(Ui.keys(KEYS[player][0], "Move"))
+			controls.add_child(Ui.keys(KEYS[player][1], "Choose"))
+	_back.queue_free()
+	_back = Ui.keys(["Esc", "B"] if GamepadRoster.has_any_gamepad() else ["Esc"], "Back")
+	_middle.add_child(_back)
 
 
 ## Moves a cursor one slot, skipping locked Cats.

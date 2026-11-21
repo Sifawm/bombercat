@@ -12,7 +12,6 @@ const PAD_BUTTONS: Dictionary[String, JoyButton] = {
 	"up": JOY_BUTTON_DPAD_UP, "down": JOY_BUTTON_DPAD_DOWN, "left": JOY_BUTTON_DPAD_LEFT,
 	"right": JOY_BUTTON_DPAD_RIGHT, "bomb": JOY_BUTTON_A, "meow": JOY_BUTTON_X,
 }
-## Left stick: the axis and which side of it.
 ## A device number no joypad has: what a slot without a gamepad listens to.
 const NO_DEVICE := 99
 ## How far the stick must be pushed; high enough that a sideways drift does not turn the Cat.
@@ -22,6 +21,7 @@ const PAD_STICK: Dictionary[String, Array] = {
 	"left": [JOY_AXIS_LEFT_X, -1.0], "right": [JOY_AXIS_LEFT_X, 1.0],
 }
 
+static var _registered := false
 var _slot: int
 ## Whether the horizontal keys were pressed more recently than the vertical ones.
 var _horizontal_is_newer := false
@@ -32,12 +32,16 @@ static func action(slot: int, control: String) -> StringName:
 	return "p%d_%s" % [slot + 1, control]
 
 
-## Creates every slot's actions. The direction keys also join Godot's ui_* actions, so each
-## Player moves through the menus with the keys it plays with (gamepads already do).
+## Creates every slot's actions and keeps each slot listening to its assigned gamepad.
 static func register_actions() -> void:
-	if InputMap.has_action(action(0, "up")):
-		return
-	Input.joy_connection_changed.connect(_assign_gamepads.unbind(2))
+	if not _registered:
+		_create_actions()
+		GamepadRoster.assignments_changed.connect(_rebind_events)
+		_registered = true
+	_rebind_events()
+
+
+static func _create_actions() -> void:
 	for slot in KEYS.size():
 		for control: String in KEYS[slot]:
 			var action_name := action(slot, control)
@@ -56,19 +60,16 @@ static func register_actions() -> void:
 				stick.axis_value = PAD_STICK[control][1]
 				InputMap.action_add_event(action_name, stick)
 				InputMap.action_add_event("ui_" + control, key)
-	_assign_gamepads()
 
 
-## Gives each slot its gamepad: the first real one to the first slot, and so on. Device
-## numbers alone will not do, because some keyboards register as a joypad and take one.
-static func _assign_gamepads() -> void:
-	var gamepads := Input.get_connected_joypads().filter(Input.is_joy_known)
+static func _rebind_events() -> void:
 	for slot in KEYS.size():
-		var device: int = gamepads[slot] if slot < gamepads.size() else NO_DEVICE
+		var device := GamepadRoster.assigned_device(slot)
+		var target := device if device != GamepadRoster.NO_DEVICE else NO_DEVICE
 		for control: String in KEYS[slot]:
 			for event in InputMap.action_get_events(action(slot, control)):
 				if event is InputEventJoypadButton or event is InputEventJoypadMotion:
-					event.device = device
+					event.device = target
 
 
 func _init(slot: int) -> void:

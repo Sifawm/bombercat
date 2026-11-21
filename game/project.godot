@@ -20,6 +20,7 @@ boot_splash/image="res://assets/splash/sky.png"
 [autoload]
 
 Audio="*res://presentation/audio.gd"
+GamepadRoster="*res://control/gamepad_roster.gd"
 
 [debug]
 

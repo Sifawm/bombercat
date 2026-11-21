@@ -14,6 +14,8 @@ var closes_itself := true
 
 var _resume: Button
 var _quit: Button
+var _column: VBoxContainer
+var _notice: Control
 
 
 func _init() -> void:
@@ -29,11 +31,11 @@ func _init() -> void:
 	process_mode = Node.PROCESS_MODE_WHEN_PAUSED
 	visible = false
 	color = Color(Ui.INK, 0.7)
-	var column := Ui.centred_column(self, 40)
-	column.add_child(Ui.title("Paused"))
+	_column = Ui.centred_column(self, 40)
+	_column.add_child(Ui.title("Paused"))
 	var menu := VBoxContainer.new()
 	menu.add_theme_constant_override("separation", 20)
-	column.add_child(menu)
+	_column.add_child(menu)
 	_resume = Ui.button("Resume", _resume_or_ask, true)
 	_resume.custom_minimum_size = Vector2(520, 112)
 	menu.add_child(_resume)
@@ -77,6 +79,15 @@ func open() -> void:
 		create_tween().tween_callback(func() -> void: _resume.disabled = false).set_delay(RESUME_DELAY)
 
 
+## Shows a warning notice inside the Pause menu, for example when a controller disconnects.
+func show_notice(message: String) -> void:
+	if _notice != null and is_instance_valid(_notice):
+		_notice.queue_free()
+	_notice = Ui.notice(Tone.ERROR, message)
+	_column.add_child(_notice)
+	_column.move_child(_notice, 1)
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if visible and (event.is_action_pressed(PAUSE_ACTION) or event.is_action_pressed("ui_cancel")):
 		get_viewport().set_input_as_handled()
@@ -94,6 +105,9 @@ func close() -> void:
 	for child in get_children():
 		if child is HowToPlay:  # closed with Start while the card was open
 			child.queue_free()
+	if _notice != null and is_instance_valid(_notice):
+		_notice.queue_free()
+		_notice = null
 	visible = false
 	get_tree().paused = false
 
