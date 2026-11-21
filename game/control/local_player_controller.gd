@@ -60,6 +60,22 @@ static func _create_actions() -> void:
 				stick.axis_value = PAD_STICK[control][1]
 				InputMap.action_add_event(action_name, stick)
 				InputMap.action_add_event("ui_" + control, key)
+	_bind_ui_gamepad_buttons()
+
+
+## Binds raw gamepad face buttons to the global UI accept/cancel actions. Godot's defaults
+## cover standard-mapped controllers, but some web browsers and Bluetooth pads report raw
+## indices that the defaults miss, so the south button (0) always confirms and the east
+## button (1) always cancels.
+static func _bind_ui_gamepad_buttons() -> void:
+	var accept := InputEventJoypadButton.new()
+	accept.device = -1
+	accept.button_index = JOY_BUTTON_A
+	InputMap.action_add_event("ui_accept", accept)
+	var cancel := InputEventJoypadButton.new()
+	cancel.device = -1
+	cancel.button_index = JOY_BUTTON_B
+	InputMap.action_add_event("ui_cancel", cancel)
 
 
 static func _rebind_events() -> void:
